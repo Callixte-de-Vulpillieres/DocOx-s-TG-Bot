@@ -12,17 +12,15 @@ logging.basicConfig(
 
 
 async def ajout_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    logging.info("Utilisateur modifié")
-    logging.info(update.chat_member.new_chat_member.status)
-    logging.info(update.chat_member.new_chat_member.user.is_bot)
-    logging.info(update.chat_member.old_chat_member.status)
     if (
         update.chat_member.new_chat_member.status == ChatMemberStatus.MEMBER
         and not update.chat_member.new_chat_member.user.is_bot
         and update.chat_member.old_chat_member.status
         in [ChatMemberStatus.LEFT, ChatMemberStatus.BANNED, ChatMemberStatus.RESTRICTED]
     ):
-        logging.info("Ajout d'un admin")
+        logging.info(
+            "Ajout d'un admin : %s", update.chat_member.new_chat_member.user.full_name
+        )
         # Ajout de l'admin
         await update.chat_member.chat.promote_member(
             update.chat_member.new_chat_member.user.id,
@@ -37,6 +35,7 @@ async def ajout_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         # Choix d'un nom aléatoire
         nom = random.choice(["Alice", "Bob"])
+        logging.info("Nom d'admin : %s", nom)
         await update.chat_member.chat.set_administrator_custom_title(
             update.chat_member.new_chat_member.user.id, nom
         )
@@ -50,4 +49,4 @@ if __name__ == "__main__":
     )
     application.add_handler(handler)
 
-    application.run_polling(allowed_updates=["chat_member"])
+    application.run_polling(poll_interval=1, allowed_updates=["chat_member"])
