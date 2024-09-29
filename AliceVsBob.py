@@ -3,6 +3,7 @@ import random
 import os
 import re
 import unicodedata
+from unidecode import unidecode
 from telegram import Update
 from telegram.constants import ChatMemberStatus
 from telegram.ext import (
@@ -67,7 +68,7 @@ async def ban_on_word(update: Update, context: ContextTypes.DEFAULT_TYPE):
         strip_accents(update.effective_message.text).translate(
             str.maketrans("", "", " \n\t\r")
         )
-    ):
+    ) or rust_regex.search(unidecode(update.effective_message.text)):
         logging.info("Message à supprimer : %s", update.effective_message.text)
         # Suppression du message
         await update.effective_message.delete()
