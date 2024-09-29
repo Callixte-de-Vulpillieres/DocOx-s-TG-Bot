@@ -3,12 +3,25 @@ import random
 import os
 from telegram import Update
 from telegram.constants import ChatMemberStatus
-from telegram.ext import ApplicationBuilder, ContextTypes, ChatMemberHandler
+from telegram.ext import (
+    ApplicationBuilder,
+    ContextTypes,
+    ChatMemberHandler,
+    MessageHandler,
+    filters,
+)
 
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
 )
+
+
+def match_word_list(text, word_list):
+    for word in word_list:
+        if word.lower() in text.lower():
+            return True
+    return False
 
 
 async def ajout_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -41,12 +54,20 @@ async def ajout_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
 
+async def ban_on_word(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    banned_words = ["rust"]
+    if match_word_list(update.message.text, banned_words):
+        await update.message.delete()
+
+
 if __name__ == "__main__":
     application = ApplicationBuilder().token(os.getenv("TG_TOKEN")).build()
 
-    handler = ChatMemberHandler(
+    handler_member = ChatMemberHandler(
         ajout_admin, chat_member_types=ChatMemberHandler.CHAT_MEMBER
     )
-    application.add_handler(handler)
+    handler_message = MessageHandler(filters=filters.TEXT, callback=ban_on_word)
+
+    application.add_handler(handler_member)
 
     application.run_polling(poll_interval=1, allowed_updates=["chat_member"])
