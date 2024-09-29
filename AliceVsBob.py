@@ -57,6 +57,7 @@ async def ajout_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def ban_on_word(update: Update, context: ContextTypes.DEFAULT_TYPE):
     banned_words = ["rust"]
     if match_word_list(update.message.text, banned_words):
+        logging.info("Message à supprimer : %s", update.message.text)
         await update.message.delete()
 
 
@@ -69,5 +70,6 @@ if __name__ == "__main__":
     handler_message = MessageHandler(filters=filters.TEXT, callback=ban_on_word)
 
     application.add_handler(handler_member)
+    application.add_handler(handler_message)
 
-    application.run_polling(poll_interval=1, allowed_updates=["chat_member"])
+    application.run_polling(poll_interval=1, allowed_updates=["chat_member", "message"])
