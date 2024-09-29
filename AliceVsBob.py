@@ -59,7 +59,7 @@ async def ban_on_word(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Create a regex to match "rust" and any variant with strange characters
     # like "rüst" or "rùst" or "Rսst"
     rust_regex = re.compile(
-        r"(r|г|Ꭱ|Ꮢ|ᖇ|ᴦ|ⲅ|ꮁ|𐒴|ℜ|)(u|ս|µ|ʋ|ᑌ|𑢸|ߎ)(s|Ѕ|Տ|Ꮥ|Ꮪ|𐐠|(Ꭲ|𑢼|🝨|Τ|t|🇹|τ)",
+        r"(r|г|Ꭱ|Ꮢ|ᖇ|ᴦ|ⲅ|ꮁ|𐒴|ℜ|)(u|ս|µ|ʋ|ᑌ|𑢸|ߎ)(s|Ѕ|Տ|Ꮥ|Ꮪ|𐐠)(Ꭲ|𑢼|🝨|Τ|t|🇹|τ)",
         re.IGNORECASE,
     )
     # Check if the message contains the word "rust"
