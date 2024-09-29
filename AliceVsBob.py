@@ -55,7 +55,7 @@ async def ajout_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def ban_on_word(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    banned_words = ["rust", "гust", "R U S T"]
+    banned_words = ["rust", "гust", "R U S T", "RUSТ"]
     if match_word_list(update.message.text, banned_words):
         logging.info("Message à supprimer : %s", update.message.text)
         await update.message.delete()
