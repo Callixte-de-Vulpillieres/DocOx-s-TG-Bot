@@ -51,7 +51,7 @@ async def ajout_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def ban_on_word(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Create a regex to match "rust" and any variant with strange characters
     # like "rüst" or "rùst" or "Rսst"
-    rust_regex = re.compile(r"(r|г)(u|ù|ü)st", re.IGNORECASE)
+    rust_regex = re.compile(r"(r|г)(u|ù|ü|ս)st", re.IGNORECASE)
     # Check if the message contains the word "rust"
     if rust_regex.search(update.effective_message.text):
         logging.info("Message à supprimer : %s", update.effective_message.text)
