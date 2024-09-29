@@ -1,6 +1,7 @@
 import logging
 import random
 import os
+import re
 from telegram import Update
 from telegram.constants import ChatMemberStatus
 from telegram.ext import (
@@ -15,13 +16,6 @@ from telegram.ext import (
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
 )
-
-
-def match_word_list(text, word_list):
-    for word in word_list:
-        if word.lower() in text.lower():
-            return True
-    return False
 
 
 async def ajout_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -55,10 +49,14 @@ async def ajout_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def ban_on_word(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    banned_words = ["rust", "гust", "R U S T", "RUSТ"]
-    if match_word_list(update.message.text, banned_words):
-        logging.info("Message à supprimer : %s", update.message.text)
-        await update.message.delete()
+    # Create a regex to match "rust" and any variant with strange characters
+    # like "rüst" or "rùst" or "Rսst"
+    rust_regex = re.compile(r"(r|г)(u|ù|ü)st", re.IGNORECASE)
+    # Check if the message contains the word "rust"
+    if rust_regex.search(update.effective_message.text):
+        logging.info("Message à supprimer : %s", update.effective_message.text)
+        # Suppression du message
+        await update.effective_message.delete()
 
 
 if __name__ == "__main__":
@@ -72,4 +70,6 @@ if __name__ == "__main__":
     application.add_handler(handler_member)
     application.add_handler(handler_message)
 
-    application.run_polling(poll_interval=1, allowed_updates=["chat_member", "message"])
+    application.run_polling(
+        poll_interval=1, allowed_updates=["chat_member", "message", "edited_message"]
+    )
