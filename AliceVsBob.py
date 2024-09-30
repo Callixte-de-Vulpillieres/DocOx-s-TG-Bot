@@ -12,8 +12,6 @@ from telegram.ext import (
     MessageHandler,
     filters,
 )
-from string import printable
-
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
@@ -28,7 +26,7 @@ def strip_accents(s):
 
 def find_rust(text):
     text = strip_accents(text.lower()).translate(str.maketrans("", "", " \n\t\r"))
-    text = "".join(char for char in text if char in printable)
+    text = "".join(char for char in text if char.isprintable())
     r = [
         "r",
         "г",
