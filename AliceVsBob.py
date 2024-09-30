@@ -1,7 +1,6 @@
 import logging
 import random
 import os
-import re
 import unicodedata
 from unidecode import unidecode
 from telegram import Update
@@ -24,6 +23,62 @@ def strip_accents(s):
     return "".join(
         c for c in unicodedata.normalize("NFD", s) if unicodedata.category(c) != "Mn"
     )
+
+
+def find_rust(text):
+    text = strip_accents(text.lower()).translate(str.maketrans("", "", " \n\t\r"))
+    r = [
+        "r",
+        "г",
+        "ꭱ",
+        "ꮢ",
+        "ᖇ",
+        "ᴦ",
+        "ⲅ",
+        "ꮁ",
+        "𐓜",
+        "ꝛ",
+        "ꞧ",
+        "ꭇ",
+        "ꭉ",
+        "🄬",
+        "🅁",
+        "🅡",
+        "🆁",
+        "🇷",
+        "ʇ",
+        "尺",
+    ]
+    u = [
+        "u",
+        "ս",
+        "ʋ",
+        "ᑌ",
+        "𑣘",
+        "ߎ",
+        "ᶙ",
+        "ꞹ",
+        "ꭎ",
+        "ꭏ",
+        "ꭒ",
+        "𐓶",
+        "🅄",
+        "🅤",
+        "🆄",
+        "🇺",
+        "ц",
+        "ᵾ",
+        "s",
+    ]
+    s = ["s", "ѕ", "տ", "ꮥ", "ꮪ", "𐑈", "ꞩ", "ꟊ", "🅂", "🅢", "🆂", "🇸", "n", "丂"]
+    t = ["ꭲ", "𑣜", "🝨", "τ", "t", "🇹", "🅃", "🅣", "🆃", "ҭ", "ꓤ", "ｲ"]
+    for i in range(len(text) - 3):
+        if text[i] in r or unidecode(text[i]) in r:
+            if text[i + 1] in u or unidecode(text[i + 1]) in u:
+                if text[i + 2] in s or unidecode(text[i + 2]) in s:
+                    if text[i + 3] in t or unidecode(text[i + 3]) in t:
+                        return True
+    return False
 
 
 async def ajout_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -57,18 +112,7 @@ async def ajout_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def ban_on_word(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # Create a regex to match "rust" and any variant with strange characters
-    # like "rüst" or "rùst" or "Rսst"
-    rust_regex = re.compile(
-        r"(r|г|Ꭱ|Ꮢ|ᖇ|ᴦ|ⲅ|ꮁ|𐒴|ℜ|Ɍ|ɼ|ɽ|ɾ|ᵣ|ᵲ|ᵳ|ᶉ|Ⓡ|ⓡ|Ɽ|Ꝛ|ꞧ|ꭇ|ꭉ|Ｒ|🄬|🅁|🅡|🆁|🇷)(u|ս|µ|ʋ|ᑌ|𑢸|ߎ|ų|Ʉ|ᵤ|ᶙ|Ⓤ|Ꞹ|ꭎ|ꭏ|ꭒ|Ｕ|𐓎|🅄|🅤|🆄|🇺|υ|Ц)(s|Ѕ|Տ|Ꮥ|Ꮪ|𐐠|ȿ|ʂ|ᵴ|ᶊ|Ⓢ|ⓢ|ꞩ|ꟊ|Ｓ|🅂|🅢|🆂|🇸|)(Ꭲ|𑢼|🝨|Τ|t|🇹|τ|ŧ|ƫ|Ƭ|Ʈ|ȶ|Ⱦ|ᵵ|Ⓣ|Ｔ|🅃|🅣|🆃|т|ҭ)",
-        re.IGNORECASE,
-    )
-    # Check if the message contains the word "rust"
-    if rust_regex.search(
-        strip_accents(update.effective_message.text).translate(
-            str.maketrans("", "", " \n\t\r")
-        )
-    ) or rust_regex.search(unidecode(update.effective_message.text)):
+    if find_rust(update.effective_message.text):
         logging.info("Message à supprimer : %s", update.effective_message.text)
         # Suppression du message
         await update.effective_message.delete()
