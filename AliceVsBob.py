@@ -12,6 +12,7 @@ from telegram.ext import (
     MessageHandler,
     filters,
 )
+from string import printable
 
 
 logging.basicConfig(
@@ -27,6 +28,7 @@ def strip_accents(s):
 
 def find_rust(text):
     text = strip_accents(text.lower()).translate(str.maketrans("", "", " \n\t\r"))
+    text = "".join(char for char in text if char in printable)
     r = [
         "r",
         "г",
@@ -49,9 +51,8 @@ def find_rust(text):
         "ʇ",
         "尺",
         "℟",
-        "ℜ",
-        "ℝ",
     ]
+
     u = [
         "u",
         "ս",
@@ -73,7 +74,8 @@ def find_rust(text):
         "ᵾ",
         "s",
     ]
-    s = ["s", "ѕ", "տ", "ꮥ", "ꮪ", "𐑈", "ꞩ", "ꟊ", "🅂", "🅢", "🆂", "🇸", "n", "丂"]
+    st = ["ﬆ"]
+    s = ["s", "ѕ", "տ", "ꮥ", "ꮪ", "𐑈", "ꞩ", "ꟊ", "🅂", "🅢", "🆂", "🇸", "n", "丂", "ƽ"]
     t = ["ꭲ", "𑣜", "🝨", "τ", "t", "🇹", "🅃", "🅣", "🆃", "ҭ", "ꓤ", "ｲ"]
     for i in range(len(text) - 3):
         if text[i] in r or unidecode(text[i]) in r:
@@ -81,6 +83,8 @@ def find_rust(text):
                 if text[i + 2] in s or unidecode(text[i + 2]) in s:
                     if text[i + 3] in t or unidecode(text[i + 3]) in t:
                         return True
+                elif text[i + 2] in st or unidecode(text[i + 2]) in st:
+                    return True
     return False
 
 
