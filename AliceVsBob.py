@@ -76,7 +76,7 @@ def find_rust(text):
     ]
     st = ["ﬆ"]
     s = ["s", "ѕ", "տ", "ꮥ", "ꮪ", "𐑈", "ꞩ", "ꟊ", "🅂", "🅢", "🆂", "🇸", "n", "丂", "ƽ"]
-    t = ["ꭲ", "𑣜", "🝨", "τ", "t", "🇹", "🅃", "🅣", "🆃", "ҭ", "ꓤ", "ｲ", "ƚ"]
+    t = ["ꭲ", "𑣜", "🝨", "τ", "t", "🇹", "🅃", "🅣", "🆃", "ҭ", "ꓤ", "ｲ", "ƚ", "l"]
     for i in range(len(text) - 3):
         if text[i] in r or unidecode(text[i]) in r:
             if text[i + 1] in u or unidecode(text[i + 1]) in u:
@@ -119,6 +119,7 @@ async def ajout_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def ban_on_word(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # print(update.ch)
     if find_rust(update.effective_message.text):
         logging.info("Message à supprimer : %s", update.effective_message.text)
         # Suppression du message
