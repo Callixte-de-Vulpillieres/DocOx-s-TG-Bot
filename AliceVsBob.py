@@ -13,6 +13,9 @@ from telegram.ext import (
     filters,
 )
 
+AliceVsBob = -1002270674258
+Test = -1002438805139
+
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
 )
@@ -119,7 +122,6 @@ async def ajout_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def ban_on_word(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # print(update.ch)
     if find_rust(update.effective_message.text):
         logging.info("Message à supprimer : %s", update.effective_message.text)
         # Suppression du message
@@ -130,9 +132,12 @@ if __name__ == "__main__":
     application = ApplicationBuilder().token(os.getenv("TG_TOKEN")).build()
 
     handler_member = ChatMemberHandler(
-        ajout_admin, chat_member_types=ChatMemberHandler.CHAT_MEMBER
+        ajout_admin, chat_member_types=ChatMemberHandler.CHAT_MEMBER, chat_id=AliceVsBob
     )
-    handler_message = MessageHandler(filters=filters.TEXT, callback=ban_on_word)
+    handler_message = MessageHandler(
+        filters=filters.TEXT & filters.Chat({AliceVsBob, Test}),
+        callback=ban_on_word,
+    )
 
     application.add_handler(handler_member)
     application.add_handler(handler_message)
