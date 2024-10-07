@@ -10,11 +10,16 @@ from telegram.ext import (
     ContextTypes,
     ChatMemberHandler,
     MessageHandler,
+    CommandHandler,
+    CallbackQueryHandler,
     filters,
 )
+from billard import start, leaderboard, callback
 
 AliceVsBob = -1002270674258
 Test = -1002438805139
+Billard = -1002425330756
+
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
@@ -139,9 +144,27 @@ if __name__ == "__main__":
         callback=ban_on_word,
     )
 
+    handler_start = CommandHandler(
+        command="start", callback=start, filters=filters.Chat(Billard)
+    )
+
+    handler_leaderboard = CommandHandler(
+        command="leaderboard", callback=leaderboard, filters=filters.Chat(Billard)
+    )
+
+    handler_boutons = CallbackQueryHandler(callback=callback)
     application.add_handler(handler_member)
     application.add_handler(handler_message)
+    application.add_handler(handler_start)
+    application.add_handler(handler_leaderboard)
+    application.add_handler(handler_boutons)
 
     application.run_polling(
-        poll_interval=1, allowed_updates=["chat_member", "message", "edited_message"]
+        poll_interval=1,
+        allowed_updates=[
+            Update.MESSAGE,
+            Update.EDITED_MESSAGE,
+            Update.CHAT_MEMBER,
+            Update.CALLBACK_QUERY,
+        ],
     )
