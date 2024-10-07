@@ -158,9 +158,13 @@ class PartieEnCours:
         await self.message.unpin()
         await self.message.chat.send_message(
             f"Victoire de l'équipe {team}\n\nÉquipe 1 :\n"
-            + "\n".join([f"{joueur.pseudo} ({joueur.elo})" for joueur in self.team1])
+            + "\n".join(
+                [f"{joueur.pseudo} ({round(joueur.elo,2)})" for joueur in self.team1]
+            )
             + "\n\nÉquipe 2 :\n"
-            + "\n".join([f"{joueur.pseudo} ({joueur.elo})" for joueur in self.team2])
+            + "\n".join(
+                [f"{joueur.pseudo} ({round(joueur.elo,2)})" for joueur in self.team2]
+            )
         )
         database.execute(
             "INSERT INTO game VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
@@ -181,9 +185,13 @@ class PartieEnCours:
     def __str__(self):
         return (
             "Équipe 1 :\n"
-            + "\n".join([f"{joueur.pseudo} ({joueur.elo})" for joueur in self.team1])
+            + "\n".join(
+                [f"{joueur.pseudo} ({round(joueur.elo,2)})" for joueur in self.team1]
+            )
             + "\n\nÉquipe 2 :\n"
-            + "\n".join([f"{joueur.pseudo} ({joueur.elo})" for joueur in self.team2])
+            + "\n".join(
+                [f"{joueur.pseudo} ({round(joueur.elo,2)})" for joueur in self.team2]
+            )
         )
 
 
