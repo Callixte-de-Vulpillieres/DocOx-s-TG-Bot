@@ -213,7 +213,7 @@ async def leaderboard(update: Update, context):
         id = await update.effective_chat.get_member(joueur[0])
         vrai_joueur = Joueur(id.user)
         rep += f"**{i+1}** — {vrai_joueur.pseudo} — **{round(vrai_joueur.elo,2)}**\n"
-    await update.message.reply_text(rep, parse_mode="Markdown")
+    await update.message.reply_text(rep, parse_mode="MarkdownV2")
 
 
 async def callback(update: Update, context):
