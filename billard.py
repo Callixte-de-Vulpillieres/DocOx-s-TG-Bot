@@ -208,11 +208,11 @@ async def leaderboard(update: Update, context):
     joueurs = database.execute(
         "SELECT id FROM user ORDER BY elo DESC LIMIT 10"
     ).fetchall()
-    rep = "**Leaderboard**\n\n"
+    rep = "*Leaderboard*\n\n"
     for i, joueur in enumerate(joueurs):
         id = await update.effective_chat.get_member(joueur[0])
         vrai_joueur = Joueur(id.user)
-        rep += f"**{i+1}** — {vrai_joueur.pseudo} — **{round(vrai_joueur.elo)}**\n"
+        rep += f"*{i+1}* — {vrai_joueur.pseudo} — *{round(vrai_joueur.elo)}*\n"
     await update.message.reply_text(rep, parse_mode="MarkdownV2")
 
 
