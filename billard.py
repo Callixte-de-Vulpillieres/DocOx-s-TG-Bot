@@ -12,7 +12,7 @@ partie_en_cours = None
 class Joueur:
     def __init__(self, user: User):
         self.id = user.id
-        self.pseudo = "@" + user.username if user.username else user.first_name
+        self.pseudo = user.username if user.username else user.first_name
 
         query = database.execute("SELECT * FROM user WHERE id = ?", (self.id,))
         user_db = query.fetchone()
@@ -21,7 +21,7 @@ class Joueur:
                 "INSERT INTO user VALUES (?, ?, 700)", (self.id, self.pseudo)
             )
             database_con.commit()
-            self.elo = 700
+            self.elo = 700.0
         else:
             self.elo = user_db[2]
             if self.pseudo != user_db[1]:
