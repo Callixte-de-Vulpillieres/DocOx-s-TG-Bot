@@ -219,8 +219,8 @@ async def leaderboard(update: Update, context):
         elif i == 2:
             rep += "🥉"
         else:
-            rep += f"{i+1}"
-        rep += f" – {vrai_joueur.pseudo} — <i>{round(vrai_joueur.elo)}</i>\n"
+            rep += f"{i+1} –"
+        rep += f" {vrai_joueur.pseudo} — <i>{round(vrai_joueur.elo)}</i>\n"
     logging.info(rep)
     await update.message.reply_text(rep, parse_mode="HTML")
 
