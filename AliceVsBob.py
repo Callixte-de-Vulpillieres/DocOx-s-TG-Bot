@@ -81,17 +81,43 @@ def find_rust(text):
         "ᵾ",
         "s",
         "ᴜ",
+        "⨿",
     ]
     st = ["ﬆ"]
     s = ["s", "ѕ", "տ", "ꮥ", "ꮪ", "𐑈", "ꞩ", "ꟊ", "🅂", "🅢", "🆂", "🇸", "n", "丂", "ƽ"]
     t = ["ꭲ", "𑣜", "🝨", "τ", "t", "🇹", "🅃", "🅣", "🆃", "ҭ", "ꓤ", "ｲ", "ƚ", "l", "𝓣"]
     for i in range(len(text) - 3):
-        if text[i] in r or unidecode(text[i]).lower() in r:
-            if text[i + 1] in u or unidecode(text[i + 1]).lower() in u:
-                if text[i + 2] in s or unidecode(text[i + 2]).lower() in s:
-                    if text[i + 3] in t or unidecode(text[i + 3]).lower() in t:
+        if (
+            text[i] in r
+            or text[i].lower() in r
+            or unidecode(text[i]).lower() in r
+            or unidecode(text[i]) in r
+        ):
+            if (
+                text[i + 1] in u
+                or unidecode(text[i + 1]).lower() in u
+                or unidecode(text[i + 1]) in u
+                or text[i + 1].lower() in u
+            ):
+                if (
+                    text[i + 2] in s
+                    or unidecode(text[i + 2]).lower() in s
+                    or unidecode(text[i + 2]) in s
+                    or text[i + 2].lower() in s
+                ):
+                    if (
+                        text[i + 3] in t
+                        or unidecode(text[i + 3]).lower() in t
+                        or unidecode(text[i + 3]) in t
+                        or text[i + 3].lower() in t
+                    ):
                         return True
-                elif text[i + 2] in st or unidecode(text[i + 2]).lower() in st:
+                elif (
+                    text[i + 2] in st
+                    or unidecode(text[i + 2]).lower() in st
+                    or unidecode(text[i + 2]) in st
+                    or text[i + 2].lower() in st
+                ):
                     return True
     return False
 
