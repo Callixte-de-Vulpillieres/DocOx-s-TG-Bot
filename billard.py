@@ -1,4 +1,5 @@
 import logging
+import re
 from datetime import datetime
 import sqlite3
 from telegram import Update, User, InlineKeyboardButton, InlineKeyboardMarkup
@@ -207,15 +208,25 @@ async def start(update: Update, context):
 
 
 async def leaderboard(update: Update, context):
+    nbre_j = re.search(r"\d+", update.effective_message.text)
+    if nbre_j:
+        nbre_j = int(nbre_j.group())
+    else:
+        nbre_j = 10
     joueurs = database.execute(
-        "SELECT id FROM user ORDER BY elo DESC LIMIT 10"
+        "SELECT id FROM user ORDER BY elo DESC LIMIT ?", (nbre_j,)
     ).fetchall()
     rep = "<b>Classement :</b>\n\n"
     emojis = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"]
     for i, joueur in enumerate(joueurs):
         id = await update.effective_chat.get_member(joueur[0])
         vrai_joueur = Joueur(id.user)
-        rep += f"{emojis[i]} {vrai_joueur.pseudo} — <i>{round(vrai_joueur.elo)}</i>\n"
+        if i < 10:
+            rep += (
+                f"{emojis[i]} {vrai_joueur.pseudo} — <i>{round(vrai_joueur.elo)}</i>\n"
+            )
+        else:
+            rep += f"{i+1}. {vrai_joueur.pseudo} — <i>{round(vrai_joueur.elo)}</i>\n"
     logging.info(rep)
     await update.message.reply_text(rep, parse_mode="HTML")
 
