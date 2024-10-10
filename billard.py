@@ -150,22 +150,24 @@ class PartieEnCours:
         elo_additionnel = 1 - 1 / (
             1 + 10 ** ((moyenne_perdants - moyenne_gagnants) / facteur)
         )
-        await self.message.edit_text(str(self) + f"\n\nVictoire de l'équipe {team}")
-        for joueur in gagnants:
-            joueur.set_elo(elo_additionnel / len(gagnants))
-        for joueur in perdants:
-            joueur.set_elo(-elo_additionnel / len(perdants))
+        message = f"Partie terminée, victoire de l'équipe {team}\n\nÉquipe 1 :\n"
+        for joueur in self.team1:
+            message += f"{joueur.pseudo} ({round(joueur.elo,2)}"
+            if team == 1:
+                joueur.set_elo(elo_additionnel / len(self.team1))
+            else:
+                joueur.set_elo(-elo_additionnel / len(self.team2))
+            message += f" → {round(joueur.elo,2)})\n"
+        message += "\nÉquipe 2 :\n"
+        for joueur in self.team2:
+            message += f"{joueur.pseudo} ({round(joueur.elo,2)}"
+            if team == 2:
+                joueur.set_elo(elo_additionnel / len(self.team2))
+            else:
+                joueur.set_elo(-elo_additionnel / len(self.team1))
+            message += f" → {round(joueur.elo,2)})\n"
+        await self.message.edit_text(message)
         await self.message.unpin()
-        await self.message.chat.send_message(
-            f"Victoire de l'équipe {team}\n\nÉquipe 1 :\n"
-            + "\n".join(
-                [f"{joueur.pseudo} ({round(joueur.elo,2)})" for joueur in self.team1]
-            )
-            + "\n\nÉquipe 2 :\n"
-            + "\n".join(
-                [f"{joueur.pseudo} ({round(joueur.elo,2)})" for joueur in self.team2]
-            )
-        )
         database.execute(
             "INSERT INTO game VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (
