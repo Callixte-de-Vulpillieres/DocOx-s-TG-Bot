@@ -39,7 +39,6 @@ class Joueur:
         K = 50 / (1 + nbre_parties / 20)
         self.elo += K * elo_additionnel
         database.execute("UPDATE user SET elo = ? WHERE id = ?", (self.elo, self.id))
-        database_con.commit()
         return self.elo
 
     def __hash__(self) -> int:
@@ -229,6 +228,46 @@ async def leaderboard(update: Update, context):
             rep += f"{i+1}. {vrai_joueur.pseudo} — <i>{round(vrai_joueur.elo)}</i>\n"
     logging.info(rep)
     await update.message.reply_text(rep, parse_mode="HTML")
+
+
+async def supprimer(update: Update, context):
+    # Supprimer la dernière partie
+    database.execute("SELECT * FROM game ORDER BY temps DESC LIMIT 1")
+    last_game = database.fetchone()
+    if last_game is None:
+        await update.message.reply_text("Aucune partie à supprimer")
+        return
+    message = await update.effective_message.reply_to_message
+    if message is None:
+        await update.message.reply_text("Répondre à la partie à supprimer")
+        return
+    if message.message_id != last_game[0]:
+        await update.message.reply_text("On ne peut supprimer que la dernière partie")
+        return
+
+    database.execute("DELETE FROM game WHERE id = ?", (last_game[0],))
+    # Mettre à jour les ELO
+    texte: str = message.text
+    # Pour chaque joueur, on récupère son ELO avant la partie
+    for i in range(2, 8):
+        if last_game[i] is not None:
+            database.execute("SELECT name FROM user WHERE id = ?", (last_game[i],))
+            pseudo = database.fetchone()[0]
+            if pseudo is None:
+                logging.error("Pseudo non trouvé pour %s", last_game[i])
+                database_con.rollback()
+                return
+            indice = texte.index(pseudo)
+            if indice == -1:
+                logging.error("Pseudo non trouvé dans le texte")
+                database_con.rollback()
+                return
+            ancien_elo = float(re.search(r"[-+]?(?:\d*\.*\d+)", texte[indice:]).group())
+            database.execute(
+                "UPDATE user SET elo = ? WHERE id = ?", (ancien_elo, last_game[i])
+            )
+    database_con.commit()
+    logging.info("Partie supprimée")
 
 
 async def callback(update: Update, context):
