@@ -267,6 +267,7 @@ async def supprimer(update: Update, context):
                 "UPDATE user SET elo = ? WHERE id = ?", (ancien_elo, last_game[i])
             )
     database_con.commit()
+    await update.message.reply_text("Partie supprimée")
     logging.info("Partie supprimée")
 
 
