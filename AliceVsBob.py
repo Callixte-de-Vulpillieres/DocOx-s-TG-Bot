@@ -1,9 +1,11 @@
 import logging
+
+# import asyncio
 import random
 import os
 import unicodedata
 from unidecode import unidecode
-from telegram import Update
+from telegram import Update, BotCommand, BotCommandScopeChat
 from telegram.constants import ChatMemberStatus
 from telegram.ext import (
     ApplicationBuilder,
@@ -180,6 +182,17 @@ async def ban_on_word(update: Update, context: ContextTypes.DEFAULT_TYPE):
 if __name__ == "__main__":
     application = ApplicationBuilder().token(os.getenv("TG_TOKEN")).build()
 
+    # # Pour l'initialisation des commandes seulement
+    # asyncio.run(
+    #     application.bot.set_my_commands(
+    #         [
+    #             BotCommand("start", "Démarrer une partie"),
+    #             BotCommand("leaderboard", "Afficher le classement"),
+    #             BotCommand("supprimer", "Supprimer la dernière partie"),
+    #         ],
+    #         BotCommandScopeChat(Billard),
+    #     )
+    # )
     handler_member = ChatMemberHandler(
         ajout_admin, chat_member_types=ChatMemberHandler.CHAT_MEMBER, chat_id=AliceVsBob
     )
