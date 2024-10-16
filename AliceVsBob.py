@@ -224,6 +224,7 @@ if __name__ == "__main__":
     application.add_handler(handler_leaderboard)
     application.add_handler(handler_supp)
     application.add_handler(handler_boutons)
+    application.add_handler(handler_rec)
 
     application.run_polling(
         poll_interval=1,
