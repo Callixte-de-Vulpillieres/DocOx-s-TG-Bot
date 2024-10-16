@@ -237,7 +237,7 @@ async def supprimer(update: Update, context):
     if last_game is None:
         await update.message.reply_text("Aucune partie à supprimer")
         return
-    message = await update.effective_message.reply_to_message
+    message = update.effective_message.reply_to_message
     if message is None:
         await update.message.reply_text("Répondre à la partie à supprimer")
         return
