@@ -295,6 +295,7 @@ async def recalcule_elo(update: Update, context):
                     user = await update.effective_chat.get_member(id)
                     joueurs[id] = Joueur(user.user)
                     joueurs[id].nbre_parties = 0
+                    joueurs[id].elo = 700
                 if (i + 1) % 2 == partie[8]:
                     vainqueurs.add(id)
                 else:
