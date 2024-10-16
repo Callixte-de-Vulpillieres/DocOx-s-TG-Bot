@@ -139,7 +139,7 @@ class PartieEnCours:
         )
 
     async def victoire(self, team):
-        facteur = 400
+        facteur = 400.0
         if team == 1:
             gagnants = self.team1
             perdants = self.team2
@@ -295,7 +295,7 @@ async def recalcule_elo(update: Update, context):
                     user = await update.effective_chat.get_member(id)
                     joueurs[id] = Joueur(user.user)
                     joueurs[id].nbre_parties = 0
-                    joueurs[id].elo = 700
+                    joueurs[id].elo = 700.0
                 if (i + 1) % 2 == partie[8]:
                     vainqueurs.add(id)
                 else:
@@ -312,8 +312,8 @@ async def recalcule_elo(update: Update, context):
         for id in defaits:
             joueurs[id].set_elo(-elo_additionnel / len(defaits))
     database_con.commit()
-    logging.info("ELO recalculés")
-    await update.message.reply_text("ELO recalculés")
+    logging.info("Elo recalculés")
+    await update.message.reply_text("Elo recalculés")
 
 
 async def callback(update: Update, context):
