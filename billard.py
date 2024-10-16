@@ -313,7 +313,7 @@ async def recalcule_elo(update: Update, context):
             joueurs[id].set_elo(-elo_additionnel / len(defaits))
     database_con.commit()
     logging.info("ELO recalculés")
-    update.message.reply_text("ELO recalculés")
+    await update.message.reply_text("ELO recalculés")
 
 
 async def callback(update: Update, context):
