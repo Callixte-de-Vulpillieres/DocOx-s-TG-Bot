@@ -234,10 +234,12 @@ async def supprimer(update: Update, context):
     # Supprimer la dernière partie
     database.execute("SELECT * FROM game ORDER BY temps DESC LIMIT 1")
     last_game = database.fetchone()
+    print(update.effective_message)
+    print(type(update.effective_message))
     if last_game is None:
         await update.message.reply_text("Aucune partie à supprimer")
         return
-    message = await update.effective_message.reply_to_message
+    message = update.effective_message.reply_to_message
     if message is None:
         await update.message.reply_text("Répondre à la partie à supprimer")
         return
