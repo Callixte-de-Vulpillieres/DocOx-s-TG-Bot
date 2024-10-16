@@ -33,10 +33,13 @@ class Joueur:
                     "UPDATE user SET name = ? WHERE id = ?", (self.pseudo, self.id)
                 )
 
-    def set_elo(self, elo_additionnel):
+    def set_elo(self, elo_additionnel, update=True):
         K = 50 / (1 + self.nbre_parties / 20)
         self.elo += K * elo_additionnel
-        database.execute("UPDATE user SET elo = ? WHERE id = ?", (self.elo, self.id))
+        if update:
+            database.execute(
+                "UPDATE user SET elo = ? WHERE id = ?", (self.elo, self.id)
+            )
         self.nbre_parties += 1
         return self.elo
 
@@ -308,9 +311,11 @@ async def recalcule_elo(update: Update, context):
             1 + 10 ** ((moyenne_defaits - moyenne_vainqueurs) / 400)
         )
         for id in vainqueurs:
-            joueurs[id].set_elo(elo_additionnel / len(vainqueurs))
+            joueurs[id].set_elo(
+                elo_additionnel / len(vainqueurs), j == len(parties) - 1
+            )
         for id in defaits:
-            joueurs[id].set_elo(-elo_additionnel / len(defaits))
+            joueurs[id].set_elo(-elo_additionnel / len(defaits), j == len(parties) - 1)
     database_con.commit()
     logging.info("Elo recalculés")
     await update.message.reply_text("Elo recalculés")
