@@ -67,15 +67,17 @@ class PartieEnCours:
         await self.message.pin()
 
     async def ajouter_joueur(self, joueur, team):
-        if joueur in self.team1 or joueur in self.team2:
-            return
         if team == 1:
-            if len(self.team1) >= 3:
+            if joueur in self.team1 or len(self.team1) >= 3:
                 return
+            if joueur in self.team2:
+                self.team2.remove(joueur)
             self.team1.add(joueur)
         else:
-            if len(self.team2) >= 3:
+            if joueur in self.team2 or len(self.team2) >= 3:
                 return
+            if joueur in self.team1:
+                self.team1.remove(joueur)
             self.team2.add(joueur)
         boutons = []
         if len(self.team1) < 3:
