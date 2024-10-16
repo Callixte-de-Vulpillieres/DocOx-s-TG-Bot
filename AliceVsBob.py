@@ -16,7 +16,7 @@ from telegram.ext import (
     CallbackQueryHandler,
     filters,
 )
-from billard import start, leaderboard, callback, supprimer
+from billard import start, leaderboard, callback, supprimer, recalcule_elo
 
 AliceVsBob = -1002270674258
 Test = -1002438805139
@@ -211,6 +211,10 @@ if __name__ == "__main__":
 
     handler_supp = CommandHandler(
         command="supprimer", callback=supprimer, filters=filters.Chat(Billard)
+    )
+
+    handler_rec = CommandHandler(
+        command="recalcule_elo", callback=recalcule_elo, filters=filters.Chat(Billard)
     )
 
     handler_boutons = CallbackQueryHandler(callback=callback)

@@ -14,6 +14,10 @@ class Joueur:
     def __init__(self, user: User):
         self.id = user.id
         self.pseudo = user.username if user.username else user.first_name
+        self.nbre_parties = database.execute(
+            "SELECT COUNT(*) FROM game WHERE joueur1_eq1 = ? OR joueur2_eq1 = ? OR joueur3_eq1 = ? OR joueur1_eq2 = ? OR joueur2_eq2 = ? OR joueur3_eq2 = ?",
+            (self.id, self.id, self.id, self.id, self.id, self.id),
+        ).fetchone()[0]
 
         query = database.execute("SELECT * FROM user WHERE id = ?", (self.id,))
         user_db = query.fetchone()
@@ -21,7 +25,6 @@ class Joueur:
             database.execute(
                 "INSERT INTO user VALUES (?, ?, 700)", (self.id, self.pseudo)
             )
-            database_con.commit()
             self.elo = 700.0
         else:
             self.elo = user_db[2]
@@ -29,16 +32,12 @@ class Joueur:
                 database.execute(
                     "UPDATE user SET name = ? WHERE id = ?", (self.pseudo, self.id)
                 )
-                database_con.commit()
 
     def set_elo(self, elo_additionnel):
-        nbre_parties = database.execute(
-            "SELECT COUNT(*) FROM game WHERE joueur1_eq1 = ? OR joueur2_eq1 = ? OR joueur3_eq1 = ? OR joueur1_eq2 = ? OR joueur2_eq2 = ? OR joueur3_eq2 = ?",
-            (self.id, self.id, self.id, self.id, self.id, self.id),
-        ).fetchone()[0]
-        K = 50 / (1 + nbre_parties / 20)
+        K = 50 / (1 + self.nbre_parties / 20)
         self.elo += K * elo_additionnel
         database.execute("UPDATE user SET elo = ? WHERE id = ?", (self.elo, self.id))
+        self.nbre_parties += 1
         return self.elo
 
     def __hash__(self) -> int:
@@ -222,6 +221,7 @@ async def leaderboard(update: Update, context):
     for i, joueur in enumerate(joueurs):
         id = await update.effective_chat.get_member(joueur[0])
         vrai_joueur = Joueur(id.user)
+        database_con.commit()
         if i < 10:
             rep += (
                 f"{emojis[i]} {vrai_joueur.pseudo} — <i>{round(vrai_joueur.elo)}</i>\n"
@@ -273,6 +273,47 @@ async def supprimer(update: Update, context):
     logging.info("Partie supprimée")
 
 
+async def recalcule_elo(update: Update, context):
+    # Check if the user is an admin
+    if not update.effective_user.id in [
+        admin.user.id for admin in await update.effective_chat.get_administrators()
+    ]:
+        await update.message.reply_text(
+            "Seuls les administrateurs peuvent utiliser cette commande"
+        )
+        return
+    parties = database.execute("SELECT * FROM game").fetchall()
+    joueurs = {}
+    logging.info("Recalcul des ELO")
+    for j, partie in enumerate(parties):
+        logging.info("Partie %s/%s", j, len(parties))
+        vainqueurs = set()
+        defaits = set()
+        for i, id in enumerate(partie[2:8]):
+            if id is not None:
+                if id not in joueurs:
+                    joueurs[id] = Joueur(await update.effective_chat.get_member(id))
+                    joueurs[id].nbre_parties = 0
+                if (i + 1) % 2 == partie[8]:
+                    vainqueurs.add(id)
+                else:
+                    defaits.add(id)
+        moyenne_vainqueurs = sum([joueurs[id].elo for id in vainqueurs]) / len(
+            vainqueurs
+        )
+        moyenne_defaits = sum([joueurs[id].elo for id in defaits]) / len(defaits)
+        elo_additionnel = 1 - 1 / (
+            1 + 10 ** ((moyenne_defaits - moyenne_vainqueurs) / 400)
+        )
+        for id in vainqueurs:
+            joueurs[id].set_elo(elo_additionnel / len(vainqueurs))
+        for id in defaits:
+            joueurs[id].set_elo(-elo_additionnel / len(defaits))
+    database_con.commit()
+    logging.info("ELO recalculés")
+    update.message.reply_text("ELO recalculés")
+
+
 async def callback(update: Update, context):
     logging.info("Callback : %s", update.callback_query.data)
     global partie_en_cours
@@ -281,10 +322,13 @@ async def callback(update: Update, context):
         return
     if update.callback_query.data == "1":
         await partie_en_cours.ajouter_joueur(Joueur(update.callback_query.from_user), 1)
+        database_con.commit()
     elif update.callback_query.data == "2":
         await partie_en_cours.ajouter_joueur(Joueur(update.callback_query.from_user), 2)
+        database_con.commit()
     elif update.callback_query.data == "Quitter":
         await partie_en_cours.retirer_joueur(Joueur(update.callback_query.from_user))
+        database_con.commit()
     elif update.callback_query.data == "Victoire 1":
         await partie_en_cours.victoire(1)
         partie_en_cours = None
