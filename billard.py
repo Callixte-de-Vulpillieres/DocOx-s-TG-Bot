@@ -292,7 +292,8 @@ async def recalcule_elo(update: Update, context):
         for i, id in enumerate(partie[2:8]):
             if id is not None:
                 if id not in joueurs:
-                    joueurs[id] = Joueur(update.effective_chat.get_member(id))
+                    user = await update.effective_chat.get_member(id)
+                    joueurs[id] = Joueur(user)
                     joueurs[id].nbre_parties = 0
                 if (i + 1) % 2 == partie[8]:
                     vainqueurs.add(id)
