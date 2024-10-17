@@ -5,7 +5,7 @@ import random
 import os
 import unicodedata
 from unidecode import unidecode
-from telegram import Update, BotCommand, BotCommandScopeChat
+from telegram import Update
 from telegram.constants import ChatMemberStatus
 from telegram.ext import (
     ApplicationBuilder,
@@ -215,7 +215,9 @@ if __name__ == "__main__":
     )
 
     handler_rec = CommandHandler(
-        command="recalcule_elo", callback=recalcule_elo, filters=filters.Chat(Test)
+        command="recalcule_elo",
+        callback=recalcule_elo,
+        filters=filters.Chat({Test, Billard}),
     )
 
     handler_boutons = CallbackQueryHandler(callback=callback)
