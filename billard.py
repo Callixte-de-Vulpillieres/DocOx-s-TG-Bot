@@ -314,6 +314,8 @@ async def recalcule_elo(update: Update, context):
             joueurs[id].set_elo(
                 elo_additionnel / len(vainqueurs), j == len(parties) - 1
             )
+            if joueurs[id].pseudo == "Vulpillieres":
+                print(joueurs[id].elo)
         for id in defaits:
             joueurs[id].set_elo(-elo_additionnel / len(defaits), j == len(parties) - 1)
     database_con.commit()
