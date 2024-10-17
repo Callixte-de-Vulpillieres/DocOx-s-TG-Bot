@@ -206,7 +206,9 @@ if __name__ == "__main__":
     )
 
     handler_leaderboard = CommandHandler(
-        command="leaderboard", callback=leaderboard, filters=filters.Chat(Billard)
+        command="leaderboard",
+        callback=leaderboard,
+        filters=filters.Chat({Billard, Test}),
     )
 
     handler_supp = CommandHandler(
@@ -214,7 +216,7 @@ if __name__ == "__main__":
     )
 
     handler_rec = CommandHandler(
-        command="recalcule_elo", callback=recalcule_elo, filters=filters.Chat(Billard)
+        command="recalcule_elo", callback=recalcule_elo, filters=filters.Chat(Test)
     )
 
     handler_boutons = CallbackQueryHandler(callback=callback)
