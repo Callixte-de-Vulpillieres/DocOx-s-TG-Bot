@@ -41,14 +41,8 @@ class Joueur:
             )
 
     def set_elo(self, elo_additionnel, update=True):
-        print(f"Joueur : {self.pseudo}")
-        print(f"Elo avant : {self.elo}")
-        print(f"Elo ajouté : {elo_additionnel}")
-        print(f"Parties : {self.nbre_parties}")
         K = 50 / (1 + self.nbre_parties / 20)
-        print(f"K : {K}")
         self.elo += K * elo_additionnel
-        print(f"Elo après : {self.elo}")
         if update:
             database.execute(
                 "UPDATE user SET elo = ? WHERE id = ?", (self.elo, self.id)
@@ -316,9 +310,7 @@ async def recalcule_elo(update: Update, context):
                 else:
                     defaits.add(identifient)
         moyenne_vainqueurs = sum([joueurs[i].elo for i in vainqueurs]) / len(vainqueurs)
-        print(f"Moyenne vainqueurs : {moyenne_vainqueurs}")
         moyenne_defaits = sum([joueurs[i].elo for i in defaits]) / len(defaits)
-        print(f"Moyenne defaits : {moyenne_defaits}")
         elo_additionnel = 1 - 1 / (
             1 + 10 ** ((moyenne_defaits - moyenne_vainqueurs) / 400)
         )
@@ -326,8 +318,8 @@ async def recalcule_elo(update: Update, context):
             joueurs[i].set_elo(elo_additionnel / len(vainqueurs), j == len(parties) - 1)
         for i in defaits:
             joueurs[i].set_elo(-elo_additionnel / len(defaits), j == len(parties) - 1)
-    database_con.rollback()
-    # database_con.commit()
+    # database_con.rollback()
+    database_con.commit()
     logging.info("Elo recalculés")
     for joueur in joueurs.values():
         logging.info("%s : %s", joueur.pseudo, joueur.elo)
