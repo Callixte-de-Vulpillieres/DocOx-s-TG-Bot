@@ -321,6 +321,7 @@ async def recalcule_elo(update: Update, context):
             if joueurs[id].pseudo == "Vulpillieres":
                 print(joueurs[id].elo)
     # database_con.commit()
+    await leaderboard(update, context)
     database_con.rollback()
     logging.info("Elo recalculés")
     await update.message.reply_text("Elo recalculés")
