@@ -4,6 +4,8 @@ from datetime import datetime
 import sqlite3
 from telegram import Update, User, InlineKeyboardButton, InlineKeyboardMarkup
 
+Billard = -1002425330756
+
 database_con = sqlite3.connect("billard.db")
 database = database_con.cursor()
 
@@ -11,9 +13,9 @@ partie_en_cours = None
 
 
 class Joueur:
-    def __init__(self, user: User):
-        self.id = user.id
-        self.pseudo = user.username if user.username else user.first_name
+    def __init__(self, id):
+        self.id = id
+        self.pseudo = None
         self.nbre_parties = database.execute(
             "SELECT COUNT(*) FROM game WHERE joueur1_eq1 = ? OR joueur2_eq1 = ? OR joueur3_eq1 = ? OR joueur1_eq2 = ? OR joueur2_eq2 = ? OR joueur3_eq2 = ?",
             (self.id, self.id, self.id, self.id, self.id, self.id),
@@ -27,11 +29,16 @@ class Joueur:
             )
             self.elo = 700.0
         else:
+            self.pseudo = user_db[1]
             self.elo = user_db[2]
-            if self.pseudo != user_db[1]:
-                database.execute(
-                    "UPDATE user SET name = ? WHERE id = ?", (self.pseudo, self.id)
-                )
+
+    async def load(self, user: User):
+        pseudo = user.username if user.username else user.first_name
+        if pseudo != self.pseudo:
+            self.pseudo = pseudo
+            database.execute(
+                "UPDATE user SET name = ? WHERE id = ?", (self.pseudo, self.id)
+            )
 
     def set_elo(self, elo_additionnel, update=True):
         K = 50 / (1 + self.nbre_parties / 20)
@@ -222,8 +229,8 @@ async def leaderboard(update: Update, context):
     rep = "<b>Classement :</b>\n\n"
     emojis = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"]
     for i, joueur in enumerate(joueurs):
-        id = await update.effective_chat.get_member(joueur[0])
-        vrai_joueur = Joueur(id.user)
+        vrai_joueur = Joueur(joueur[0])
+        # await vrai_joueur.load((await update.effective_chat.get_member(joueur[0])).user)
         database_con.commit()
         if i < 10:
             rep += (
@@ -292,38 +299,35 @@ async def recalcule_elo(update: Update, context):
         logging.info("Partie %s/%s", j, len(parties))
         vainqueurs = set()
         defaits = set()
-        for i, id in enumerate(partie[2:8]):
-            if id is not None:
-                if id not in joueurs:
-                    user = await update.effective_chat.get_member(id)
-                    joueurs[id] = Joueur(user.user)
-                    joueurs[id].nbre_parties = 0
-                    joueurs[id].elo = 700.0
+        for i, identifient in enumerate(partie[2:8]):
+            if identifient is not None:
+                if identifient not in joueurs:
+                    joueurs[identifient] = Joueur(identifient)
+                    joueurs[identifient].nbre_parties = 0
+                    joueurs[identifient].elo = 700.0
                 if (i + 1) % 2 == partie[8]:
-                    vainqueurs.add(id)
+                    vainqueurs.add(identifient)
                 else:
-                    defaits.add(id)
-        moyenne_vainqueurs = sum([joueurs[id].elo for id in vainqueurs]) / len(
-            vainqueurs
-        )
-        moyenne_defaits = sum([joueurs[id].elo for id in defaits]) / len(defaits)
+                    defaits.add(identifient)
+        moyenne_vainqueurs = sum([joueurs[i].elo for i in vainqueurs]) / len(vainqueurs)
+        moyenne_defaits = sum([joueurs[i].elo for i in defaits]) / len(defaits)
         elo_additionnel = 1 - 1 / (
             1 + 10 ** ((moyenne_defaits - moyenne_vainqueurs) / 400)
         )
-        for id in vainqueurs:
-            joueurs[id].set_elo(
-                elo_additionnel / len(vainqueurs), j == len(parties) - 1
-            )
-            if joueurs[id].pseudo == "Vulpillieres":
-                print(joueurs[id].elo)
-        for id in defaits:
-            joueurs[id].set_elo(-elo_additionnel / len(defaits), j == len(parties) - 1)
-            if joueurs[id].pseudo == "Vulpillieres":
-                print(joueurs[id].elo)
-    # database_con.commit()
+        for i in vainqueurs:
+            joueurs[i].set_elo(elo_additionnel / len(vainqueurs), j == len(parties) - 1)
+            if joueurs[i].pseudo == "Vulpillieres":
+                print(joueurs[i].elo)
+        for i in defaits:
+            joueurs[i].set_elo(-elo_additionnel / len(defaits), j == len(parties) - 1)
+            if joueurs[i].pseudo == "Vulpillieres":
+                print(joueurs[i].elo)
     await leaderboard(update, context)
     database_con.rollback()
+    # database_con.commit()
     logging.info("Elo recalculés")
+    for joueur in joueurs.values():
+        logging.info("%s : %s", joueur.pseudo, joueur.elo)
     await update.message.reply_text("Elo recalculés")
 
 
@@ -334,13 +338,18 @@ async def callback(update: Update, context):
         await update.callback_query.answer("Aucune partie en cours")
         return
     if update.callback_query.data == "1":
-        await partie_en_cours.ajouter_joueur(Joueur(update.callback_query.from_user), 1)
+        appelant = Joueur(update.callback_query.from_user.id)
+        await appelant.load(update.callback_query.from_user)
+        await partie_en_cours.ajouter_joueur(appelant, 1)
         database_con.commit()
     elif update.callback_query.data == "2":
-        await partie_en_cours.ajouter_joueur(Joueur(update.callback_query.from_user), 2)
+        appelant = Joueur(update.callback_query.from_user.id)
+        await appelant.load(update.callback_query.from_user)
+        await partie_en_cours.ajouter_joueur(appelant, 2)
         database_con.commit()
     elif update.callback_query.data == "Quitter":
-        await partie_en_cours.retirer_joueur(Joueur(update.callback_query.from_user))
+        appelant = Joueur(update.callback_query.from_user.id)
+        await partie_en_cours.retirer_joueur(appelant)
         database_con.commit()
     elif update.callback_query.data == "Victoire 1":
         await partie_en_cours.victoire(1)

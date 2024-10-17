@@ -16,11 +16,10 @@ from telegram.ext import (
     CallbackQueryHandler,
     filters,
 )
-from billard import start, leaderboard, callback, supprimer, recalcule_elo
+from billard import start, leaderboard, callback, supprimer, recalcule_elo, Billard
 
 AliceVsBob = -1002270674258
 Test = -1002438805139
-Billard = -1002425330756
 
 
 logging.basicConfig(
@@ -197,7 +196,7 @@ if __name__ == "__main__":
         ajout_admin, chat_member_types=ChatMemberHandler.CHAT_MEMBER, chat_id=AliceVsBob
     )
     handler_message = MessageHandler(
-        filters=filters.TEXT & filters.Chat({AliceVsBob, Test}),
+        filters=filters.TEXT & filters.Chat(AliceVsBob),
         callback=ban_on_word,
     )
 
