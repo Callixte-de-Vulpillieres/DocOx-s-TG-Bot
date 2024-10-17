@@ -173,7 +173,7 @@ class PartieEnCours:
             if team == 1:
                 joueur.set_elo(elo_additionnel / len(self.team1))
             else:
-                joueur.set_elo(-elo_additionnel / len(self.team2))
+                joueur.set_elo(-elo_additionnel / len(self.team1))
             message += f" → {round(joueur.elo,2)})\n"
         message += "\nÉquipe 2 :\n"
         for joueur in self.team2:
@@ -181,7 +181,7 @@ class PartieEnCours:
             if team == 2:
                 joueur.set_elo(elo_additionnel / len(self.team2))
             else:
-                joueur.set_elo(-elo_additionnel / len(self.team1))
+                joueur.set_elo(-elo_additionnel / len(self.team2))
             message += f" → {round(joueur.elo,2)})\n"
         await self.message.edit_text(message)
         await self.message.unpin()
