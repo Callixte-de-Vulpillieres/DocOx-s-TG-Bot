@@ -324,12 +324,8 @@ async def recalcule_elo(update: Update, context):
         )
         for i in vainqueurs:
             joueurs[i].set_elo(elo_additionnel / len(vainqueurs), j == len(parties) - 1)
-            if joueurs[i].pseudo == "Vulpillieres":
-                print("Partie avec Vulpillieres\n\n")
         for i in defaits:
             joueurs[i].set_elo(-elo_additionnel / len(defaits), j == len(parties) - 1)
-            if joueurs[i].pseudo == "Vulpillieres":
-                print("Partie avec Vulpillieres\n\n")
     database_con.rollback()
     # database_con.commit()
     logging.info("Elo recalculés")
