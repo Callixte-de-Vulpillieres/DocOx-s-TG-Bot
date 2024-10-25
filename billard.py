@@ -322,7 +322,7 @@ async def recalcule_elo(update: Update, context):
     logging.info("Elo recalculés")
     logging.info("MSE : %s", mse / len(parties))
     for joueur in joueurs.values():
-        joueur.set_elo(0, False)
+        joueur.set_elo(0)
         logging.info("%s : %s", joueur.pseudo, joueur.elo)
     await update.message.reply_text("Elo recalculés")
 
