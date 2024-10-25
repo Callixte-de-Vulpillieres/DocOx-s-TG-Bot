@@ -1,5 +1,6 @@
 import logging
 import re
+from math import sqrt
 from datetime import datetime
 import sqlite3
 from telegram import Update, User, InlineKeyboardButton, InlineKeyboardMarkup
@@ -41,7 +42,7 @@ class Joueur:
             )
 
     def set_elo(self, elo_additionnel, update=True):
-        K = 50 / (1 + self.nbre_parties / 20)
+        K = 5 * (1 + 9 / sqrt(1 + self.nbre_parties))
         self.elo += K * elo_additionnel
         if update:
             database.execute(
@@ -158,24 +159,22 @@ class PartieEnCours:
             perdants = self.team1
         moyenne_gagnants = sum([joueur.elo for joueur in gagnants]) / len(gagnants)
         moyenne_perdants = sum([joueur.elo for joueur in perdants]) / len(perdants)
-        elo_additionnel = 1 - 1 / (
-            1 + 10 ** ((moyenne_perdants - moyenne_gagnants) / facteur)
-        )
+        probabilite = 1 / (1 + 10 ** ((moyenne_perdants - moyenne_gagnants) / facteur))
         message = f"Partie terminée, victoire de l'équipe {team}\n\nÉquipe 1 :\n"
         for joueur in self.team1:
             message += f"{joueur.pseudo} ({round(joueur.elo,2)}"
             if team == 1:
-                joueur.set_elo(elo_additionnel / len(self.team1))
+                joueur.set_elo(probabilite / len(self.team1))
             else:
-                joueur.set_elo(-elo_additionnel / len(self.team1))
+                joueur.set_elo((probabilite - 1) / len(self.team1))
             message += f" → {round(joueur.elo,2)})\n"
         message += "\nÉquipe 2 :\n"
         for joueur in self.team2:
             message += f"{joueur.pseudo} ({round(joueur.elo,2)}"
             if team == 2:
-                joueur.set_elo(elo_additionnel / len(self.team2))
+                joueur.set_elo(probabilite / len(self.team2))
             else:
-                joueur.set_elo(-elo_additionnel / len(self.team2))
+                joueur.set_elo((probabilite - 1) / len(self.team2))
             message += f" → {round(joueur.elo,2)})\n"
         await self.message.edit_text(message)
         await self.message.unpin()
@@ -284,6 +283,7 @@ async def supprimer(update: Update, context):
 
 
 async def recalcule_elo(update: Update, context):
+    mse = 0
     # Check if the user is an admin
     if not update.effective_user.id in [
         admin.user.id for admin in await update.effective_chat.get_administrators()
@@ -311,16 +311,16 @@ async def recalcule_elo(update: Update, context):
                     defaits.add(identifient)
         moyenne_vainqueurs = sum([joueurs[i].elo for i in vainqueurs]) / len(vainqueurs)
         moyenne_defaits = sum([joueurs[i].elo for i in defaits]) / len(defaits)
-        elo_additionnel = 1 - 1 / (
-            1 + 10 ** ((moyenne_defaits - moyenne_vainqueurs) / 400)
-        )
+        probabilite = 1 / (1 + 10 ** ((moyenne_defaits - moyenne_vainqueurs) / 400))
+        mse += (probabilite - 1) ** 2
         for i in vainqueurs:
-            joueurs[i].set_elo(elo_additionnel / len(vainqueurs), j == len(parties) - 1)
+            joueurs[i].set_elo(probabilite / len(vainqueurs), j == len(parties) - 1)
         for i in defaits:
-            joueurs[i].set_elo(-elo_additionnel / len(defaits), j == len(parties) - 1)
+            joueurs[i].set_elo((probabilite - 1) / len(defaits), j == len(parties) - 1)
     # database_con.rollback()
     database_con.commit()
     logging.info("Elo recalculés")
+    logging.info("MSE : %s", mse / len(parties))
     for joueur in joueurs.values():
         logging.info("%s : %s", joueur.pseudo, joueur.elo)
     await update.message.reply_text("Elo recalculés")
