@@ -314,14 +314,15 @@ async def recalcule_elo(update: Update, context):
         probabilite = 1 / (1 + 10 ** ((moyenne_defaits - moyenne_vainqueurs) / 400))
         mse += (probabilite - 1) ** 2
         for i in vainqueurs:
-            joueurs[i].set_elo(probabilite / len(vainqueurs), j == len(parties) - 1)
+            joueurs[i].set_elo(probabilite / len(vainqueurs), False)
         for i in defaits:
-            joueurs[i].set_elo((probabilite - 1) / len(defaits), j == len(parties) - 1)
+            joueurs[i].set_elo((probabilite - 1) / len(defaits), False)
     # database_con.rollback()
     database_con.commit()
     logging.info("Elo recalculés")
     logging.info("MSE : %s", mse / len(parties))
     for joueur in joueurs.values():
+        joueur.set_elo(0, False)
         logging.info("%s : %s", joueur.pseudo, joueur.elo)
     await update.message.reply_text("Elo recalculés")
 
