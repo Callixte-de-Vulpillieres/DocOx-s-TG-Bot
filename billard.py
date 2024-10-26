@@ -42,7 +42,7 @@ class Joueur:
             )
 
     def set_elo(self, elo_additionnel, update=True):
-        K = 5 * (1 + 9 / sqrt(1 + self.nbre_parties))
+        K = 5 * (4 + 6 / sqrt(1 + self.nbre_parties))
         self.elo += K * elo_additionnel
         if update:
             database.execute(
