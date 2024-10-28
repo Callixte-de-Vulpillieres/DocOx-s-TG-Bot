@@ -172,7 +172,7 @@ class PartieEnCours:
         for joueur in self.team2:
             message += f"{joueur.pseudo} ({round(joueur.elo,2)}"
             if team == 2:
-                joueur.set_elo(probabilite / len(self.team2))
+                joueur.set_elo((1 - probabilite) / len(self.team2))
             else:
                 joueur.set_elo((probabilite - 1) / len(self.team2))
             message += f" → {round(joueur.elo,2)})\n"
