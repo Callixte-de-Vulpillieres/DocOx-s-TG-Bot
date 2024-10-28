@@ -82,7 +82,7 @@ class ModelElo(Model):
         for i in vainqueurs:
             K = self.k1 + self.k2 * (1 + self.joueurs[i][1]) ** (-self.k3)
             self.joueurs[i] = (
-                self.joueurs[i][0] + K * probabilite / len(vainqueurs),
+                self.joueurs[i][0] + K * (1 - probabilite) / len(vainqueurs),
                 self.joueurs[i][1] + 1,
             )
         for i in defaits:

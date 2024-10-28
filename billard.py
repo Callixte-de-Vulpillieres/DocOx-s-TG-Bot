@@ -164,7 +164,7 @@ class PartieEnCours:
         for joueur in self.team1:
             message += f"{joueur.pseudo} ({round(joueur.elo,2)}"
             if team == 1:
-                joueur.set_elo(probabilite / len(self.team1))
+                joueur.set_elo((1 - probabilite) / len(self.team1))
             else:
                 joueur.set_elo((probabilite - 1) / len(self.team1))
             message += f" → {round(joueur.elo,2)})\n"
@@ -314,7 +314,7 @@ async def recalcule_elo(update: Update, context):
         probabilite = 1 / (1 + 10 ** ((moyenne_defaits - moyenne_vainqueurs) / 400))
         mse += (probabilite - 1) ** 2
         for i in vainqueurs:
-            joueurs[i].set_elo(probabilite / len(vainqueurs), False)
+            joueurs[i].set_elo((1 - probabilite) / len(vainqueurs), False)
         for i in defaits:
             joueurs[i].set_elo((probabilite - 1) / len(defaits), False)
     # database_con.rollback()
