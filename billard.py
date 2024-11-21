@@ -418,7 +418,7 @@ async def stats(update: Update, context):
     if pire_ennemi is not None:
         rep += f"Pire ennemi(e) : {pire_ennemi} ; {pire_ennemi_def} défaite{'' if pire_ennemi_def == 1 else 's'} sur {pire_ennemi_parties} partie{'' if pire_ennemi_parties == 1 else 's'} contre lui ou elle\n"
     if meilleur_ennemi is not None:
-        rep += f"Meilleur(e) ennemi(e) : {meilleur_ennemi} ;  {meilleur_ennemi_vict} victoire{'' if meilleur_ennemi_vict == 1 else 's'} sur {meilleur_ennemi_parties} {'' if meilleur_ennemi_parties == 1 else 's'} contre lui ou elle\n"
+        rep += f"Meilleur(e) ennemi(e) : {meilleur_ennemi} ;  {meilleur_ennemi_vict} victoire{'' if meilleur_ennemi_vict == 1 else 's'} sur partie{meilleur_ennemi_parties} {'' if meilleur_ennemi_parties == 1 else 's'} contre lui ou elle\n"
 
     await update.message.reply_text(rep, parse_mode="HTML")
 
