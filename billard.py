@@ -412,13 +412,13 @@ async def stats(update: Update, context):
     if meilleur_pote is not None:
         rep += f"Meilleur(e) pote : {meilleur_pote}, {meilleur_pote_parties} fois dans la même équipe !\n"
     if meilleur_allie is not None:
-        rep += f"Meilleur(e) allié(e) : {meilleur_allie} ; {meilleur_allie_vict} {"victoire" if meilleur_allie_vict == 1 else "victoires"} sur {meilleur_allie_parties} {"partie ensemble" if meilleur_allie_parties == 1 else "parties ensemble"}\n"
+        rep += f"Meilleur(e) allié(e) : {meilleur_allie} ; {meilleur_allie_vict} victoire{'s' if meilleur_allie_vict != 1 else ''} sur {meilleur_allie_parties} partie{'' if meilleur_allie_parties == 1 else 's'} ensemble\n"
     if pire_allie is not None:
-        rep += f"Pire allié(e) : {pire_allie} ; seulement {pire_allie_vict} {"victoire" if pire_allie_vict == 1 else "victoires"} sur {pire_allie_parties} {"partie ensemble" if pire_allie_parties == 1 else "parties ensemble"}\n"
+        rep += f"Pire allié(e) : {pire_allie} ; seulement {pire_allie_vict} victoire{'' if pire_allie_vict == 1 else 's'} sur {pire_allie_parties} partie{'' if pire_allie_parties == 1 else 's'} ensemble\n"
     if pire_ennemi is not None:
-        rep += f"Pire ennemi(e) : {pire_ennemi} ; {pire_ennemi_def} {"défaite" if pire_ennemi_def == 1 else "défaites"} sur {pire_ennemi_parties} {"partie contre lui ou elle" if pire_ennemi_parties == 1 else "parties contre lui ou elle"}\n"
+        rep += f"Pire ennemi(e) : {pire_ennemi} ; {pire_ennemi_def} défaite{'' if pire_ennemi_def == 1 else 's'} sur {pire_ennemi_parties} partie{'' if pire_ennemi_parties == 1 else 's'} contre lui ou elle\n"
     if meilleur_ennemi is not None:
-        rep += f"Meilleur(e) ennemi(e) : {meilleur_ennemi} ;  {meilleur_ennemi_vict} {"victoire" if meilleur_ennemi_vict == 1 else "victoires"} sur {meilleur_ennemi_parties} {"partie contre lui ou elle" if meilleur_ennemi_parties == 1 else "parties contre lui ou elle"}\n"
+        rep += f"Meilleur(e) ennemi(e) : {meilleur_ennemi} ;  {meilleur_ennemi_vict} victoire{'' if meilleur_ennemi_vict == 1 else 's'} sur {meilleur_ennemi_parties} {'' if meilleur_ennemi_parties == 1 else 's'} contre lui ou elle\n"
 
     await update.message.reply_text(rep, parse_mode="HTML")
 
