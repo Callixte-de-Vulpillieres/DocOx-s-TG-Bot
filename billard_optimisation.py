@@ -1,8 +1,11 @@
 from abc import ABC, abstractmethod
-from billard import database
 import numpy as np
 from scipy.optimize import minimize
 import matplotlib.pyplot as plt
+from matplotlib.widgets import Slider
+from matplotlib.animation import FuncAnimation
+
+from billard import database
 
 
 class Model(ABC):
@@ -22,11 +25,14 @@ class Model(ABC):
     def get_bound(self, param):
         return (None, None)
 
-    def evaluer(self):
+    def evaluer(self, max_parties=None):
         res = 0.0
-        for partie in self.parties:
+        parties = self.parties
+        if max_parties is not None:
+            parties = parties[:max_parties]
+        for partie in parties:
             res += self.partie(partie)
-        return res / len(self.parties)
+        return 0 if max_parties==0 else res / len(parties)
 
     @abstractmethod
     def reinitialiser(self):
@@ -36,29 +42,28 @@ class Model(ABC):
     def get_parametres(self):
         pass
 
-    def optimiser(self):
+    def optimiser(self, max_parties=None):
         params_noms = self.get_parametres()
-        params__valeurs = [getattr(self, param) for param in params_noms]
+        params_valeurs = [getattr(self, param) for param in params_noms]
 
         def fonction_objectif(x):
             self.reinitialiser()
             for i, param in enumerate(params_noms):
                 setattr(self, param, x[i])
-            return self.evaluer()
+            return self.evaluer(max_parties=max_parties)
 
         return minimize(
             fonction_objectif,
-            params__valeurs,
+            params_valeurs,
             bounds=[self.get_bound(param) for param in params_noms],
-            method="Nelder-Mead",
         )
 
 
 class ModelElo(Model):
     def __init__(self):
         super().__init__()
-        self.k1 = 0
-        self.k2 = 0
+        self.k1 = 20
+        self.k2 = 30
         self.k3 = 1 / 2
         self.facteur = 400.0
         self.joueurs = {joueur: (700.0, 0) for joueur in self.joueurs.keys()}
@@ -97,10 +102,12 @@ class ModelElo(Model):
         self.joueurs = {joueur: (700.0, 0) for joueur in self.joueurs.keys()}
 
     def get_parametres(self):
-        return ["k1", "k2"]
+        return ["k1", "k2", "k3"]
 
     def get_bound(self, param):
-        return (0, None)
+        if param == "k3":
+            return (None, None)
+        return (None, None)
 
     def leaderboard(self):
         jrs = sorted(self.joueurs.items(), key=lambda x: x[1][0], reverse=True)
@@ -134,17 +141,84 @@ print(res)
 model.reinitialiser()
 model.k1 = res.x[0]
 model.k2 = res.x[1]
-# model.k3 = res.x[2]
+model.k3 = res.x[2]
 print(model.evaluer())
 model.leaderboard()
 print(f"k1 = {model.k1}, k2 = {model.k2}, k3 = {model.k3}")
 
-k1, k2, z = model.surface(0, 5 + model.k1 * 2, 0, 5 + model.k2 * 2)
+# fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
+# N = 100
+# k3max = 3
 
-fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
-surf = ax.plot_surface(k1, k2, z, cmap="viridis", vmin=np.min(z), vmax=np.max(z))
-ax.set_xlabel("k1")
-ax.set_ylabel("k2")
-ax.set_zlabel("MSE")
-fig.colorbar(surf, ax=ax, orientation="horizontal")
+# # Calculate Z values
+# k3s = np.linspace(0, k3max, N + 1)
+# Z = []
+# k1, k2 = None, None
+# for k3 in k3s:
+#     print(f"Calculating for k3 = {k3}")
+#     model.k3 = k3
+#     k1, k2, z = model.surface(0, 150, 0, 150)
+#     Z.append(z)
+# vmin, vmax = np.min(Z), np.max(Z)
+
+# # Initialize plot
+# k3_slider = Slider(
+#     plt.axes([0.25, 0.01, 0.65, 0.03]), "k3", 0, k3max, valinit=0, valstep=k3max / N
+# )
+# surf = ax.plot_surface(k1, k2, Z[0], cmap="viridis", vmin=vmin, vmax=vmax)
+# ax.set_xlabel("k1")
+# ax.set_ylabel("k2")
+# ax.set_zlabel("MSE")
+# fig.colorbar(surf, ax=ax, orientation="horizontal")
+
+
+# # Update function for the slider
+# def update(val):
+#     index = int(round(k3_slider.val * N / k3max))
+#     global surf
+#     surf.remove()  # Remove the previous surface plot
+#     surf = ax.plot_surface(k1, k2, Z[index], cmap="viridis", vmin=vmin, vmax=vmax)
+#     fig.canvas.draw_idle()
+
+
+# k3_slider.on_changed(update)
+
+
+# # Animate function
+# def animate(i):
+#     k3_slider.set_val(i * k3max / N)
+
+
+# ani = FuncAnimation(fig, animate, frames=N + 1, repeat=True)
+# ani.save("optimisation.gif", writer="imagemagick", fps=10)
+
+# plt.show()
+
+x = [i for i in range(len(model.parties))]
+k1s = []
+k2s = []
+k3s = []
+for i, partie in enumerate(model.parties):
+    print(f"Calculating for {i} parties")
+    model.reinitialiser()
+    model.k1 = 20
+    model.k2 = 30
+    model.k3 = 1 / 2
+    optim = model.optimiser(max_parties=i)
+    k1s.append(optim.x[0])
+    k2s.append(optim.x[1])
+    k3s.append(optim.x[2])
+
+# plotting on 2 graphs, one with two axes for k1 and k2, and one for k3
+fig, ax1 = plt.subplots()
+ax1.set_xlabel("Parties")
+ax1.set_ylabel("k1")
+ax1.plot(x[10:], k1s[10:], label="k1", color="tab:blue")
+ax1.plot(x[10:], k2s[10:], label="k2", color="tab:orange")
+ax1.legend(loc="upper left")
+ax2 = ax1.twinx()
+ax2.set_ylabel("k3")
+ax2.plot(x[10:], k3s[10:], label="k3", color="tab:green")
+ax2.legend(loc="upper right")
 plt.show()
+

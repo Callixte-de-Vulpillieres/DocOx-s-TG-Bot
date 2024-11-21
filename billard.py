@@ -281,6 +281,146 @@ async def supprimer(update: Update, context):
     await update.message.reply_text("Partie supprimée")
     logging.info("Partie supprimée")
 
+async def stats(update: Update, context):
+    # Statistiques sur un joueur
+    joueur = Joueur(update.effective_user.id)
+    await joueur.load(update.effective_user)
+    parties = database.execute(
+        "SELECT * FROM game WHERE joueur1_eq1 = ? OR joueur2_eq1 = ? OR joueur3_eq1 = ? OR joueur1_eq2 = ? OR joueur2_eq2 = ? OR joueur3_eq2 = ?",
+        (joueur.id, joueur.id, joueur.id, joueur.id, joueur.id, joueur.id),
+    ).fetchall()
+    if len(parties) == 0:
+        await update.message.reply_text("Aucune partie jouée")
+        return
+    victoires = 0
+    defaites = 0
+    stats_autres = {} # Stats quand avec ou contre d'autres joueurs. stats_autres[id] = [vict_ens, def_ens, vict_vs, def_vs]
+    for partie in parties:
+        vainqueurs = set()
+        defaits = set()
+        for i, identifient in enumerate(partie[2:8]):
+            if identifient is not None:
+                if (i + 1) % 2 == partie[8]:
+                    vainqueurs.add(identifient)
+                else:
+                    defaits.add(identifient)
+        if joueur.id in vainqueurs:
+            victoires += 1
+            for autre in vainqueurs:
+                if autre != joueur.id:
+                    if autre not in stats_autres:
+                        stats_autres[autre] = [0, 0, 0, 0]
+                    stats_autres[autre][0] += 1
+            for autre in defaits:
+                if autre not in stats_autres:
+                    stats_autres[autre] = [0, 0, 0, 0]
+                stats_autres[autre][2] += 1
+        elif joueur.id in defaits:
+            defaites += 1
+            for autre in vainqueurs:
+                if autre not in stats_autres:
+                    stats_autres[autre] = [0, 0, 0, 0]
+                stats_autres[autre][3] += 1
+            for autre in defaits:
+                if autre != joueur.id:
+                    if autre not in stats_autres:
+                        stats_autres[autre] = [0, 0, 0, 0]
+                    stats_autres[autre][1] += 1
+    
+    # On va déterminer le meilleur pote, le meilleur allié, le pire allié et le pire ennemi
+    def meilleur_pote_cmp(id):
+        return stats_autres[id][0] + stats_autres[id][1]
+    
+    meilleur_pote = max(stats_autres, key=meilleur_pote_cmp)
+    if meilleur_pote_cmp(meilleur_pote) == 0:
+        meilleur_pote = None
+    meilleur_pote_parties = meilleur_pote_cmp(meilleur_pote)
+    
+    def meilleur_allie_cmp(id):
+        if stats_autres[id][0] + stats_autres[id][1] == 0:
+            return 0
+        return stats_autres[id][0]/(2+(stats_autres[id][0] + stats_autres[id][1]))
+
+    meilleur_allie = max(stats_autres, key=meilleur_allie_cmp)
+    if meilleur_allie_cmp(meilleur_allie) == 0:
+        meilleur_allie = None
+    meilleur_allie_parties = meilleur_pote_cmp(meilleur_allie)
+    meilleur_allie_vict = stats_autres[meilleur_allie][0]
+    
+
+    def pire_allie_cmp(id):
+        if stats_autres[id][0] + stats_autres[id][1] == 0:
+            return 0
+        return stats_autres[id][1]/(2+(stats_autres[id][0] + stats_autres[id][1]))
+    
+    pire_allie = max(stats_autres, key=pire_allie_cmp)
+    if pire_allie_cmp(pire_allie) == 0:
+        pire_allie = None
+    pire_allie_parties = meilleur_pote_cmp(pire_allie)
+    pire_allie_vict = stats_autres[pire_allie][0]
+    
+
+    def pire_ennemi_cmp(id):
+        if stats_autres[id][2] + stats_autres[id][3] == 0:
+            return 0
+        return stats_autres[id][3]/(2+(stats_autres[id][2] + stats_autres[id][3]))
+    
+    pire_ennemi = max(stats_autres, key=pire_ennemi_cmp) 
+    if pire_ennemi_cmp(pire_ennemi) == 0:
+        pire_ennemi = None
+    pire_ennemi_parties = stats_autres[pire_ennemi][2] + stats_autres[pire_ennemi][3]
+    pire_ennemi_def = stats_autres[pire_ennemi][3]
+
+
+    def meilleur_ennemi_cmp(id):
+        if stats_autres[id][2] + stats_autres[id][3] == 0:
+            return 0
+        return stats_autres[id][2]/(2+(stats_autres[id][2] + stats_autres[id][3]))
+    
+    meilleur_ennemi = max(stats_autres, key=meilleur_ennemi_cmp)
+    if meilleur_ennemi_cmp(meilleur_ennemi) == 0:
+        meilleur_ennemi = None
+    meilleur_ennemi_parties = stats_autres[meilleur_ennemi][2] + stats_autres[meilleur_ennemi][3]
+    meilleur_ennemi_vict = stats_autres[meilleur_ennemi][2]
+
+    # On retrouve les pseudo :
+    if meilleur_pote is not None:
+        database.execute("SELECT name FROM user WHERE id = ?", (meilleur_pote,))
+        meilleur_pote = database.fetchone()[0]
+    if meilleur_allie is not None:
+        database.execute("SELECT name FROM user WHERE id = ?", (meilleur_allie,))
+        meilleur_allie = database.fetchone()[0]
+    if pire_allie is not None:
+        database.execute("SELECT name FROM user WHERE id = ?", (pire_allie,))
+        pire_allie = database.fetchone()[0]
+    if pire_ennemi is not None:
+        database.execute("SELECT name FROM user WHERE id = ?", (pire_ennemi,))
+        pire_ennemi = database.fetchone()[0]
+    if meilleur_ennemi is not None:
+        database.execute("SELECT name FROM user WHERE id = ?", (meilleur_ennemi,))
+        meilleur_ennemi = database.fetchone()[0]
+    
+    # On retrouve le classement du joueur
+    classement = database.execute("SELECT COUNT(*) FROM user WHERE elo > ?", (joueur.elo,)).fetchone()[0] + 1
+
+    rep = f"<b>Statistiques de {joueur.pseudo} :</b>\n\n"
+    rep += f"Nombre de parties : {joueur.nbre_parties}\n"
+    rep += f"Nombre de victoires : {victoires}\n"
+    rep += f"Nombre de défaites : {defaites}\n"
+    rep += f"ELO : {round(joueur.elo, 2)}\n"
+    rep += f"Classement : {classement}\n\n"
+    if meilleur_pote is not None:
+        rep += f"Meilleur(e) pote : {meilleur_pote}, {meilleur_pote_parties} fois dans la même équipe !\n"
+    if meilleur_allie is not None:
+        rep += f"Meilleur(e) allié(e) : {meilleur_allie} ; {meilleur_allie_vict} {"victoire" if meilleur_allie_vict == 1 else "victoires"} sur {meilleur_allie_parties} {"partie ensemble" if meilleur_allie_parties == 1 else "parties ensemble"}\n"
+    if pire_allie is not None:
+        rep += f"Pire allié(e) : {pire_allie} ; seulement {pire_allie_vict} {"victoire" if pire_allie_vict == 1 else "victoires"} sur {pire_allie_parties} {"partie ensemble" if pire_allie_parties == 1 else "parties ensemble"}\n"
+    if pire_ennemi is not None:
+        rep += f"Pire ennemi(e) : {pire_ennemi} ; {pire_ennemi_def} {"défaite" if pire_ennemi_def == 1 else "défaites"} sur {pire_ennemi_parties} {"partie contre lui ou elle" if pire_ennemi_parties == 1 else "parties contre lui ou elle"}\n"
+    if meilleur_ennemi is not None:
+        rep += f"Meilleur(e) ennemi(e) : {meilleur_ennemi} ;  {meilleur_ennemi_vict} {"victoire" if meilleur_ennemi_vict == 1 else "victoires"} sur {meilleur_ennemi_parties} {"partie contre lui ou elle" if meilleur_ennemi_parties == 1 else "parties contre lui ou elle"}\n"
+
+    await update.message.reply_text(rep, parse_mode="HTML")
 
 async def recalcule_elo(update: Update, context):
     mse = 0
