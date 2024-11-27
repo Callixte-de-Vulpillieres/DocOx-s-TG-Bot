@@ -273,7 +273,7 @@ async def supprimer(update: Update, context):
                 logging.error("Pseudo non trouvé dans le texte")
                 database_con.rollback()
                 return
-            ancien_elo = float(re.search(r"[-+]?(?:\d*\.*\d+)", texte[indice:]).group())
+            ancien_elo = float(re.search(r"[-+]?(?:\d*\.*\d+)", texte[indice+len(pseudo):]).group())
             database.execute(
                 "UPDATE user SET elo = ? WHERE id = ?", (ancien_elo, last_game[i])
             )
