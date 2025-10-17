@@ -32,7 +32,7 @@ class Model(ABC):
             parties = parties[:max_parties]
         for partie in parties:
             res += self.partie(partie)
-        return 0 if max_parties==0 else res / len(parties)
+        return 0 if max_parties == 0 else res / len(parties)
 
     @abstractmethod
     def reinitialiser(self):
@@ -146,79 +146,78 @@ print(model.evaluer())
 model.leaderboard()
 print(f"k1 = {model.k1}, k2 = {model.k2}, k3 = {model.k3}")
 
-# fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
-# N = 100
-# k3max = 3
+fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
+N = 100
+k3max = 3
 
-# # Calculate Z values
-# k3s = np.linspace(0, k3max, N + 1)
-# Z = []
-# k1, k2 = None, None
-# for k3 in k3s:
-#     print(f"Calculating for k3 = {k3}")
-#     model.k3 = k3
-#     k1, k2, z = model.surface(0, 150, 0, 150)
-#     Z.append(z)
-# vmin, vmax = np.min(Z), np.max(Z)
+# Calculate Z values
+k3s = np.linspace(0, k3max, N + 1)
+Z = []
+k1, k2 = None, None
+for k3 in k3s:
+    print(f"Calculating for k3 = {k3}")
+    model.k3 = k3
+    k1, k2, z = model.surface(0, 150, 0, 150)
+    Z.append(z)
+vmin, vmax = np.min(Z), np.max(Z)
 
-# # Initialize plot
-# k3_slider = Slider(
-#     plt.axes([0.25, 0.01, 0.65, 0.03]), "k3", 0, k3max, valinit=0, valstep=k3max / N
-# )
-# surf = ax.plot_surface(k1, k2, Z[0], cmap="viridis", vmin=vmin, vmax=vmax)
-# ax.set_xlabel("k1")
-# ax.set_ylabel("k2")
-# ax.set_zlabel("MSE")
-# fig.colorbar(surf, ax=ax, orientation="horizontal")
-
-
-# # Update function for the slider
-# def update(val):
-#     index = int(round(k3_slider.val * N / k3max))
-#     global surf
-#     surf.remove()  # Remove the previous surface plot
-#     surf = ax.plot_surface(k1, k2, Z[index], cmap="viridis", vmin=vmin, vmax=vmax)
-#     fig.canvas.draw_idle()
+# Initialize plot
+k3_slider = Slider(
+    plt.axes([0.25, 0.01, 0.65, 0.03]), "k3", 0, k3max, valinit=0, valstep=k3max / N
+)
+surf = ax.plot_surface(k1, k2, Z[0], cmap="viridis", vmin=vmin, vmax=vmax)
+ax.set_xlabel("k1")
+ax.set_ylabel("k2")
+ax.set_zlabel("MSE")
+fig.colorbar(surf, ax=ax, orientation="horizontal")
 
 
-# k3_slider.on_changed(update)
+# Update function for the slider
+def update(val):
+    index = int(round(k3_slider.val * N / k3max))
+    global surf
+    surf.remove()  # Remove the previous surface plot
+    surf = ax.plot_surface(k1, k2, Z[index], cmap="viridis", vmin=vmin, vmax=vmax)
+    fig.canvas.draw_idle()
 
 
-# # Animate function
-# def animate(i):
-#     k3_slider.set_val(i * k3max / N)
+k3_slider.on_changed(update)
 
 
-# ani = FuncAnimation(fig, animate, frames=N + 1, repeat=True)
-# ani.save("optimisation.gif", writer="imagemagick", fps=10)
+# Animate function
+def animate(i):
+    k3_slider.set_val(i * k3max / N)
 
-# plt.show()
 
-x = [i for i in range(len(model.parties))]
-k1s = []
-k2s = []
-k3s = []
-for i, partie in enumerate(model.parties):
-    print(f"Calculating for {i} parties")
-    model.reinitialiser()
-    model.k1 = 20
-    model.k2 = 30
-    model.k3 = 1 / 2
-    optim = model.optimiser(max_parties=i)
-    k1s.append(optim.x[0])
-    k2s.append(optim.x[1])
-    k3s.append(optim.x[2])
+ani = FuncAnimation(fig, animate, frames=N + 1, repeat=True)
+ani.save("optimisation.gif", writer="imagemagick", fps=10)
 
-# plotting on 2 graphs, one with two axes for k1 and k2, and one for k3
-fig, ax1 = plt.subplots()
-ax1.set_xlabel("Parties")
-ax1.set_ylabel("k1")
-ax1.plot(x[10:], k1s[10:], label="k1", color="tab:blue")
-ax1.plot(x[10:], k2s[10:], label="k2", color="tab:orange")
-ax1.legend(loc="upper left")
-ax2 = ax1.twinx()
-ax2.set_ylabel("k3")
-ax2.plot(x[10:], k3s[10:], label="k3", color="tab:green")
-ax2.legend(loc="upper right")
 plt.show()
 
+# x = [i for i in range(len(model.parties))]
+# k1s = []
+# k2s = []
+# k3s = []
+# for i, partie in enumerate(model.parties):
+#     print(f"Calculating for {i} parties")
+#     model.reinitialiser()
+#     model.k1 = 20
+#     model.k2 = 30
+#     model.k3 = 1 / 2
+#     optim = model.optimiser(max_parties=i)
+#     k1s.append(optim.x[0])
+#     k2s.append(optim.x[1])
+#     k3s.append(optim.x[2])
+
+# # plotting on 2 graphs, one with two axes for k1 and k2, and one for k3
+# fig, ax1 = plt.subplots()
+# ax1.set_xlabel("Parties")
+# ax1.set_ylabel("k1")
+# ax1.plot(x[10:], k1s[10:], label="k1", color="tab:blue")
+# ax1.plot(x[10:], k2s[10:], label="k2", color="tab:orange")
+# ax1.legend(loc="upper left")
+# ax2 = ax1.twinx()
+# ax2.set_ylabel("k3")
+# ax2.plot(x[10:], k3s[10:], label="k3", color="tab:green")
+# ax2.legend(loc="upper right")
+# plt.show()
