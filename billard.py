@@ -26,12 +26,14 @@ class Joueur:
         user_db = query.fetchone()
         if user_db is None:
             database.execute(
-                "INSERT INTO user VALUES (?, ?, 700)", (self.id, self.pseudo)
+                "INSERT INTO user VALUES (?, ?, 700, 700)", (self.id, self.pseudo)
             )
             self.elo = 700.0
+            self.best_elo = 700.0
         else:
             self.pseudo = user_db[1]
             self.elo = user_db[2]
+            self.best_elo = user_db[3]
 
     async def load(self, user: User):
         pseudo = user.username if user.username else user.first_name
@@ -44,9 +46,11 @@ class Joueur:
     def set_elo(self, elo_additionnel, update=True):
         K = 5 * (4 + 6 / sqrt(1 + self.nbre_parties))
         self.elo += K * elo_additionnel
+        self.best_elo = max(self.best_elo, self.elo)
         if update:
             database.execute(
-                "UPDATE user SET elo = ? WHERE id = ?", (self.elo, self.id)
+                "UPDATE user SET elo = ?, best_elo = ? WHERE id = ?",
+                (self.elo, self.best_elo, self.id),
             )
         self.nbre_parties += 1
         return self.elo
@@ -223,7 +227,20 @@ async def leaderboard(update: Update, context):
     else:
         nbre_j = 10
     joueurs = database.execute(
-        "SELECT id FROM user ORDER BY elo DESC LIMIT ?", (nbre_j,)
+        """
+        SELECT DISTINCT joueur_id
+        FROM (SELECT joueur1_eq1 AS joueur_id, temps FROM game
+        UNION ALL SELECT joueur2_eq1 AS joueur_id, temps FROM game
+        UNION ALL SELECT joueur3_eq1 AS joueur_id, temps FROM game
+        UNION ALL SELECT joueur1_eq2 AS joueur_id, temps FROM game
+        UNION ALL SELECT joueur2_eq2 AS joueur_id, temps FROM game
+        UNION ALL SELECT joueur3_eq2 AS joueur_id, temps FROM game)
+        WHERE joueur_id IS NOT NULL
+        AND temps >= date('now', '-5 months')
+        ORDER BY (SELECT elo FROM user WHERE id = joueur_id) DESC
+        LIMIT ?
+        """,
+        (nbre_j,),
     ).fetchall()
     rep = "<b>Classement :</b>\n\n"
     emojis = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"]
@@ -237,6 +254,33 @@ async def leaderboard(update: Update, context):
             )
         else:
             rep += f"{i+1}. {vrai_joueur.pseudo} — <i>{round(vrai_joueur.elo)}</i>\n"
+    logging.info(rep)
+    await update.message.reply_text(rep, parse_mode="HTML")
+
+
+async def wall_of_fame(update: Update, context):
+    nbre_j = re.search(r"\d+", update.effective_message.text)
+    if nbre_j:
+        nbre_j = int(nbre_j.group())
+    else:
+        nbre_j = 10
+    joueurs = database.execute(
+        "SELECT id FROM user ORDER BY best_elo DESC LIMIT ?",
+        (nbre_j,),
+    ).fetchall()
+    rep = "<b>Wall of Fame</b>\n</i>Les joueurs ayant atteint les plus hauts scores Elo :</i>\n\n"
+    emojis = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"]
+    for i, joueur in enumerate(joueurs):
+        vrai_joueur = Joueur(joueur[0])
+        database_con.commit()
+        if i == 0:
+            rep += f"<b>{emojis[i]} 👑 {vrai_joueur.pseudo} 👑 — <i>{round(vrai_joueur.best_elo)}</i></b>\n"
+        elif i < 10:
+            rep += f"{emojis[i]} {vrai_joueur.pseudo} — <i>{round(vrai_joueur.best_elo)}</i>\n"
+        else:
+            rep += (
+                f"{i+1}. {vrai_joueur.pseudo} — <i>{round(vrai_joueur.best_elo)}</i>\n"
+            )
     logging.info(rep)
     await update.message.reply_text(rep, parse_mode="HTML")
 
@@ -257,9 +301,9 @@ async def supprimer(update: Update, context):
         return
 
     database.execute("DELETE FROM game WHERE id = ?", (last_game[0],))
-    # Mettre à jour les ELO
+    # Mettre à jour les Elo
     texte: str = message.text
-    # Pour chaque joueur, on récupère son ELO avant la partie
+    # Pour chaque joueur, on récupère son Elo avant la partie
     for i in range(2, 8):
         if last_game[i] is not None:
             database.execute("SELECT name FROM user WHERE id = ?", (last_game[i],))
@@ -273,13 +317,16 @@ async def supprimer(update: Update, context):
                 logging.error("Pseudo non trouvé dans le texte")
                 database_con.rollback()
                 return
-            ancien_elo = float(re.search(r"[-+]?(?:\d*\.*\d+)", texte[indice+len(pseudo):]).group())
+            ancien_elo = float(
+                re.search(r"[-+]?(?:\d*\.*\d+)", texte[indice + len(pseudo) :]).group()
+            )
             database.execute(
                 "UPDATE user SET elo = ? WHERE id = ?", (ancien_elo, last_game[i])
             )
     database_con.commit()
     await update.message.reply_text("Partie supprimée")
     logging.info("Partie supprimée")
+
 
 async def stats(update: Update, context):
     # Statistiques sur un joueur
@@ -294,7 +341,9 @@ async def stats(update: Update, context):
         return
     victoires = 0
     defaites = 0
-    stats_autres = {} # Stats quand avec ou contre d'autres joueurs. stats_autres[id] = [vict_ens, def_ens, vict_vs, def_vs]
+    stats_autres = (
+        {}
+    )  # Stats quand avec ou contre d'autres joueurs. stats_autres[id] = [vict_ens, def_ens, vict_vs, def_vs]
     for partie in parties:
         vainqueurs = set()
         defaits = set()
@@ -326,61 +375,60 @@ async def stats(update: Update, context):
                     if autre not in stats_autres:
                         stats_autres[autre] = [0, 0, 0, 0]
                     stats_autres[autre][1] += 1
-    
+
     # On va déterminer le meilleur pote, le meilleur allié, le pire allié et le pire ennemi
     def meilleur_pote_cmp(id):
         return stats_autres[id][0] + stats_autres[id][1]
-    
+
     meilleur_pote = max(stats_autres, key=meilleur_pote_cmp)
     if meilleur_pote_cmp(meilleur_pote) == 0:
         meilleur_pote = None
     meilleur_pote_parties = meilleur_pote_cmp(meilleur_pote)
-    
+
     def meilleur_allie_cmp(id):
         if stats_autres[id][0] + stats_autres[id][1] == 0:
             return 0
-        return stats_autres[id][0]/(2+(stats_autres[id][0] + stats_autres[id][1]))
+        return stats_autres[id][0] / (2 + (stats_autres[id][0] + stats_autres[id][1]))
 
     meilleur_allie = max(stats_autres, key=meilleur_allie_cmp)
     if meilleur_allie_cmp(meilleur_allie) == 0:
         meilleur_allie = None
     meilleur_allie_parties = meilleur_pote_cmp(meilleur_allie)
     meilleur_allie_vict = stats_autres[meilleur_allie][0]
-    
 
     def pire_allie_cmp(id):
         if stats_autres[id][0] + stats_autres[id][1] == 0:
             return 0
-        return stats_autres[id][1]/(2+(stats_autres[id][0] + stats_autres[id][1]))
-    
+        return stats_autres[id][1] / (2 + (stats_autres[id][0] + stats_autres[id][1]))
+
     pire_allie = max(stats_autres, key=pire_allie_cmp)
     if pire_allie_cmp(pire_allie) == 0:
         pire_allie = None
     pire_allie_parties = meilleur_pote_cmp(pire_allie)
     pire_allie_vict = stats_autres[pire_allie][0]
-    
 
     def pire_ennemi_cmp(id):
         if stats_autres[id][2] + stats_autres[id][3] == 0:
             return 0
-        return stats_autres[id][3]/(2+(stats_autres[id][2] + stats_autres[id][3]))
-    
-    pire_ennemi = max(stats_autres, key=pire_ennemi_cmp) 
+        return stats_autres[id][3] / (2 + (stats_autres[id][2] + stats_autres[id][3]))
+
+    pire_ennemi = max(stats_autres, key=pire_ennemi_cmp)
     if pire_ennemi_cmp(pire_ennemi) == 0:
         pire_ennemi = None
     pire_ennemi_parties = stats_autres[pire_ennemi][2] + stats_autres[pire_ennemi][3]
     pire_ennemi_def = stats_autres[pire_ennemi][3]
 
-
     def meilleur_ennemi_cmp(id):
         if stats_autres[id][2] + stats_autres[id][3] == 0:
             return 0
-        return stats_autres[id][2]/(2+(stats_autres[id][2] + stats_autres[id][3]))
-    
+        return stats_autres[id][2] / (2 + (stats_autres[id][2] + stats_autres[id][3]))
+
     meilleur_ennemi = max(stats_autres, key=meilleur_ennemi_cmp)
     if meilleur_ennemi_cmp(meilleur_ennemi) == 0:
         meilleur_ennemi = None
-    meilleur_ennemi_parties = stats_autres[meilleur_ennemi][2] + stats_autres[meilleur_ennemi][3]
+    meilleur_ennemi_parties = (
+        stats_autres[meilleur_ennemi][2] + stats_autres[meilleur_ennemi][3]
+    )
     meilleur_ennemi_vict = stats_autres[meilleur_ennemi][2]
 
     # On retrouve les pseudo :
@@ -399,15 +447,32 @@ async def stats(update: Update, context):
     if meilleur_ennemi is not None:
         database.execute("SELECT name FROM user WHERE id = ?", (meilleur_ennemi,))
         meilleur_ennemi = database.fetchone()[0]
-    
+
     # On retrouve le classement du joueur
-    classement = database.execute("SELECT COUNT(*) FROM user WHERE elo > ?", (joueur.elo,)).fetchone()[0] + 1
+    classement = (
+        database.execute(
+            """SELECT COUNT(*) FROM user WHERE elo > ?
+            AND id IN (SELECT DISTINCT joueur_id
+                FROM (SELECT joueur1_eq1 AS joueur_id, temps FROM game
+                UNION ALL SELECT joueur2_eq1 AS joueur_id, temps FROM game
+                UNION ALL SELECT joueur3_eq1 AS joueur_id, temps FROM game
+                UNION ALL SELECT joueur1_eq2 AS joueur_id, temps FROM game
+                UNION ALL SELECT joueur2_eq2 AS joueur_id, temps FROM game
+                UNION ALL SELECT joueur3_eq2 AS joueur_id, temps FROM game)
+                WHERE joueur_id IS NOT NULL
+                AND temps >= date('now', '-5 months'))  
+            """,
+            (joueur.elo,),
+        ).fetchone()[0]
+        + 1
+    )
 
     rep = f"<b>Statistiques de {joueur.pseudo} :</b>\n\n"
     rep += f"Nombre de parties : {joueur.nbre_parties}\n"
     rep += f"Nombre de victoires : {victoires}\n"
     rep += f"Nombre de défaites : {defaites}\n"
-    rep += f"ELO : {round(joueur.elo, 2)}\n"
+    rep += f"Elo : {round(joueur.elo, 2)}\n"
+    rep += f"Meilleur Elo atteint : {round(joueur.best_elo, 2)}\n"
     rep += f"Classement : {classement}\n\n"
     if meilleur_pote is not None:
         rep += f"Meilleur(e) pote : {meilleur_pote}, {meilleur_pote_parties} fois dans la même équipe !\n"
@@ -422,6 +487,7 @@ async def stats(update: Update, context):
 
     await update.message.reply_text(rep, parse_mode="HTML")
 
+
 async def recalcule_elo(update: Update, context):
     mse = 0
     # Check if the user is an admin
@@ -434,7 +500,7 @@ async def recalcule_elo(update: Update, context):
         return
     parties = database.execute("SELECT * FROM game").fetchall()
     joueurs = {}
-    logging.info("Recalcul des ELO")
+    logging.info("Recalcul des Elo")
     for j, partie in enumerate(parties):
         logging.info("Partie %s/%s", j, len(parties))
         vainqueurs = set()
