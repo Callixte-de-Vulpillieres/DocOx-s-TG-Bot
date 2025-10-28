@@ -197,6 +197,7 @@ if __name__ == "__main__":
     #             BotCommand("start", "Démarrer une partie"),
     #             BotCommand("leaderboard", "Afficher le classement"),
     #             BotCommand("supprimer", "Supprimer la dernière partie"),
+    #             BotCommand("wall_of_fame", "Affiche les meilleurs classements historiques"),
     #         ],
     #         BotCommandScopeChat(Billard),
     #     )
@@ -246,6 +247,7 @@ if __name__ == "__main__":
     application.add_handler(handler_message)
     application.add_handler(handler_start)
     application.add_handler(handler_leaderboard)
+    application.add_handler(handler_wall_of_fame)
     application.add_handler(handler_supp)
     application.add_handler(handler_boutons)
     application.add_handler(handler_rec)
