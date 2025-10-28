@@ -268,7 +268,7 @@ async def wall_of_fame(update: Update, context):
         "SELECT id FROM user ORDER BY best_elo DESC LIMIT ?",
         (nbre_j,),
     ).fetchall()
-    rep = "<b>Wall of Fame</b>\n</i>Les joueurs ayant atteint les plus hauts scores Elo :</i>\n\n"
+    rep = "<b>Wall of Fame</b>\n<i>Les joueurs ayant atteint les plus hauts scores Elo :</i>\n\n"
     emojis = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"]
     for i, joueur in enumerate(joueurs):
         vrai_joueur = Joueur(joueur[0])
